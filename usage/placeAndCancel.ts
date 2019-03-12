@@ -1,19 +1,13 @@
-import { wavesApi, config, axiosHttp, Tx } from '../src'
+import { wavesApi, config, axiosHttp } from '../src'
 import axios from 'axios'
 import { order, cancelOrder as co, transfer } from '@waves/waves-transactions'
 
-const { placeOrder, getBalance, cancelOrder, broadcastAndWait } = wavesApi(config.testnet, axiosHttp(axios))
+const { placeOrder, cancelOrder, broadcastAndWait } = wavesApi(config.testnet, axiosHttp(axios))
 
 export const testingHostSeed = 'a897148d797746499489466437b300aa87d8d2e6066f40448a3860729bca1a5e'
 
-
 const t = transfer({ recipient: '', amount: 1 }, testingHostSeed)
 broadcastAndWait(t)
-
-const b: Tx = null
-
-b.type = t.type
-
 
 const main = async () => {
   const ord = order({
