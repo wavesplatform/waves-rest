@@ -1,6 +1,15 @@
-import { TTx, WithId, WithSender, IOrder, ICancelOrder } from '@waves/waves-transactions'
-import { IMassTransferTransaction, ITransferTransaction, IDataTransaction, ISetScriptTransaction, IIssueTransaction } from '@waves/waves-transactions'
-import { } from '@waves/waves-transactions/dist/transactions'
+import {
+  TTx,
+  WithId,
+  WithSender,
+  IOrder,
+  ICancelOrder,
+  IMassTransferTransaction,
+  ITransferTransaction,
+  IDataTransaction,
+  ISetScriptTransaction,
+  IIssueTransaction
+} from '@waves/waves-transactions'
 
 export type TxWithIdAndSender = TTx & WithId & WithSender
 
@@ -23,7 +32,7 @@ export const axiosHttp = (axios: any): IHttp => ({
   post: <T>(url: string, data: any) => axios.post(url, data).then((x: any) => x.data as T),
 })
 
-export const apolloHttp = (apollo: { new(): { get: any, post: any, initialize: any } }): IHttp => {
+export const apolloHttp = (apollo: { new(): any }): IHttp => {
 
   class wrapper extends apollo {
     constructor() {
@@ -297,5 +306,4 @@ export interface IWavesApi {
   placeOrder(order: IOrder): Promise<Order>
   cancelOrder(amountAsset: string, priceAsset: string, cancelOrder: ICancelOrder): Promise<void>
   config: IApiConfig
-
 }
