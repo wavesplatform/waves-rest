@@ -2,19 +2,16 @@ import { TTx, WithId, WithSender, IOrder, ICancelOrder } from '@waves/waves-tran
 import { IMassTransferTransaction, ITransferTransaction, IDataTransaction, ISetScriptTransaction, IIssueTransaction } from '@waves/waves-transactions'
 import { } from '@waves/waves-transactions/dist/transactions'
 
-export type Tx = TTx & WithId & WithSender
+export type TxWithIdAndSender = TTx & WithId & WithSender
 
-interface TxExtension {
-  id: string,
-  sender: string
-}
+interface TypeExtension extends WithId, WithSender { }
 
-export type MassTransferTransaction = IMassTransferTransaction & TxExtension
-export type TransferTransaction = ITransferTransaction & TxExtension
-export type DataTransaction = IDataTransaction & TxExtension
-export type SetScriptTransaction = ISetScriptTransaction & TxExtension
-export type IssueTransaction = IIssueTransaction & TxExtension
-export type Order = IOrder & WithId
+export type MassTransferTransaction = IMassTransferTransaction & TypeExtension
+export type TransferTransaction = ITransferTransaction & TypeExtension
+export type DataTransaction = IDataTransaction & TypeExtension
+export type SetScriptTransaction = ISetScriptTransaction & TypeExtension
+export type IssueTransaction = IIssueTransaction & TypeExtension
+export type Order = IOrder & TypeExtension
 
 export interface IHttp {
   get: <T>(url: string) => Promise<T>
@@ -176,16 +173,16 @@ export const wavesApi = (config: IApiConfig, h: IHttp): IWavesApi => {
   const getHeight = async () =>
     node.get<{ height: number }>('blocks/last').then(x => x.height)
 
-  const geTxById = async (txId: string): Promise<Tx> =>
-    node.get<Tx>(`transactions/info/${txId}`)
+  const geTxById = async (txId: string): Promise<TxWithIdAndSender> =>
+    node.get<TxWithIdAndSender>(`transactions/info/${txId}`)
 
-  const getUtxById = async (txId: string): Promise<Tx> =>
-    node.get<Tx>(`transactions/unconfirmed/info/${txId}`)
+  const getUtxById = async (txId: string): Promise<TxWithIdAndSender> =>
+    node.get<TxWithIdAndSender>(`transactions/unconfirmed/info/${txId}`)
 
-  const broadcast = async (tx: TTx): Promise<Tx> =>
-    node.post<Tx>('transactions/broadcast', tx)
+  const broadcast = async (tx: TTx): Promise<TxWithIdAndSender> =>
+    node.post<TxWithIdAndSender>('transactions/broadcast', tx)
 
-  const waitForTx = async (txId: string): Promise<Tx> => {
+  const waitForTx = async (txId: string): Promise<TxWithIdAndSender> => {
     return retry(async () => geTxById(txId), 999, 1000)
   }
 
@@ -201,14 +198,14 @@ export const wavesApi = (config: IApiConfig, h: IHttp): IWavesApi => {
   const getIssueTxs = (params: GetTransferTxsParams): Promise<IssueTransaction[]> =>
     api.get<{ data: { data: IssueTransaction }[] }>(`transactions/issue?&sort=desc${p(params)}`).then(x => x.data.map(y => y.data))
 
-  const geTxsByAddress = async (address: string, limit: number = 100): Promise<Tx[]> =>
-    (await node.get<Tx[][]>(`transactions/address/${address}/limit/${limit}`))[0]
+  const geTxsByAddress = async (address: string, limit: number = 100): Promise<TxWithIdAndSender[]> =>
+    (await node.get<TxWithIdAndSender[][]>(`transactions/address/${address}/limit/${limit}`))[0]
 
-  const broadcastAndWait = async (tx: Tx): Promise<Tx> =>
+  const broadcastAndWait = async (tx: TxWithIdAndSender): Promise<TxWithIdAndSender> =>
     await broadcast(tx).then(x => waitForTx(x.id))
 
-  const getUtx = (): Promise<Tx[]> =>
-    node.get<Tx[]>('transactions/unconfirmed')
+  const getUtx = (): Promise<TxWithIdAndSender[]> =>
+    node.get<TxWithIdAndSender[]>('transactions/unconfirmed')
 
   const getBalance = (address: string): Promise<number> =>
     node.get<{ available: number }>(`addresses/balance/details/${address}`).then(x => x.available)
@@ -259,20 +256,21 @@ export const wavesApi = (config: IApiConfig, h: IHttp): IWavesApi => {
 export interface IWavesApi {
   waitForHeight(height: number): Promise<number>
   getHeight(): Promise<number>
-  geTxById(txId: string): Promise<Tx>
-  getUtxById(txId: string): Promise<Tx>
-  broadcast(tx: TTx): Promise<Tx>
-  broadcastAndWait(tx: TTx): Promise<Tx>
-  waitForTx(txId: string): Promise<Tx>
+  geTxById(txId: string): Promise<TxWithIdAndSender>
+  getUtxById(txId: string): Promise<TxWithIdAndSender>
+  broadcast(tx: TTx): Promise<TxWithIdAndSender>
+  broadcastAndWait(tx: TTx): Promise<TxWithIdAndSender>
+  waitForTx(txId: string): Promise<TxWithIdAndSender>
   getDataTxs(params: GetDataTxsParams): Promise<DataTransaction[]>
   getMassTransfersTxs(params: GetMassTransferTxsParams): Promise<MassTransferTransaction[]>
   getIssueTxs(params: GetIssueTxsParams): Promise<IssueTransaction[]>
   getTransfersTxs(params: GetTransferTxsParams): Promise<TransferTransaction[]>
-  geTxsByAddress(address: string, limit?: number): Promise<Tx[]>
-  getUtx(): Promise<Tx[]>
+  geTxsByAddress(address: string, limit?: number): Promise<TxWithIdAndSender[]>
+  getUtx(): Promise<TxWithIdAndSender[]>
   getSetScripTxsByScript(script: string, limit?: number): Promise<SetScriptTransaction[]>
   getBalance(address: string): Promise<number>
   placeOrder(order: IOrder): Promise<Order>
   cancelOrder(amountAsset: string, priceAsset: string, cancelOrder: ICancelOrder): Promise<void>
   config: IApiConfig
+
 }

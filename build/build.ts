@@ -13,7 +13,12 @@ async function build() {
     await remove(p('tmp'))
     const ver = await npmGetVersion('@waves/waves-rest')
     ver.patch++
-    await copyJson(p('../package.json'), p('../dist/package.json'), { main: 'index.js', types: 'index.d.ts', version: versionToString(ver) })
+    await copyJson(p('../package.json'), p('../dist/package.json'), {
+      main: 'index.js',
+      types: 'index.d.ts',
+      version: versionToString(ver),
+      devDependencies: undefined,
+    })
   } catch (error) {
     console.log(error)
   }

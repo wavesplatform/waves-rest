@@ -12,7 +12,7 @@
   "types": "dist/index.d.ts",
   "scripts": {
     "build": "ts-node build/build.ts",
-    "prepublishOnly": "npm run build",
+    "deploy": "cd dist; npm publish",
     "fix-style": "tslint --fix -c tslint.json '{src,test,usage}/**/*{.ts,.tsx}'",
     "test": "jest"
   },
