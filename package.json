@@ -1,0 +1,58 @@
+{
+  "name": "@waves/waves-rest",
+  "version": "0.0.2",
+  "description": "Waves rest apis bundled together",
+  "keywords": [
+    "waves",
+    "crypto",
+    "transactions",
+    "rest"
+  ],
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "ts-node build/build.ts",
+    "prepublishOnly": "npm run build",
+    "fix-style": "tslint --fix -c tslint.json '{src,test,usage}/**/*{.ts,.tsx}'",
+    "test": "jest"
+  },
+  "author": {
+    "name": "Yuriy Naydenov",
+    "email": "ebceu44@gmail.com"
+  },
+  "license": "MIT",
+  "peerDependencies": {
+    "typescript": "^3.2.2"
+  },
+  "devDependencies": {
+    "@types/axios": "^0.14.0",
+    "@types/jest": "^23.3.9",
+    "@types/ncp": "^2.0.1",
+    "@types/node": "^10.12.3",
+    "@types/rimraf": "^2.0.2",
+    "copy-webpack-plugin": "^4.5.2",
+    "jest": "^23.6.0",
+    "jsdoc-to-markdown": "^4.0.1",
+    "nativescript-typedoc-theme": "0.0.7",
+    "ncp": "^2.0.0",
+    "preprocess": "^3.1.0",
+    "rimraf": "^2.6.2",
+    "ts-jest": "^23.10.4",
+    "ts-jsdoc": "^3.0.1",
+    "ts-loader": "^5.1.0",
+    "ts-node": "^7.0.1",
+    "typedoc": "^0.13.0",
+    "typedoc-clarity-theme": "^1.1.0",
+    "typescript": "^3.2.2",
+    "typescript-json-schema": "^0.33.0",
+    "webpack": "^4.17.2",
+    "webpack-cli": "^3.1.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/wavesplatform/waves-rest.git"
+  },
+  "dependencies": {
+    "@waves/waves-transactions": "^3.3.2"
+  }
+}
