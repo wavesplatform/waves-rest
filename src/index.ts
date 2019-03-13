@@ -32,7 +32,7 @@ export const axiosHttp = (axios: any): IHttp => ({
   post: <T>(url: string, data: any) => axios.post(url, data).then((x: any) => x.data as T),
 })
 
-export const apolloHttp = (apollo: { new(): any }): IHttp => {
+export const apolloHttp = (apollo: any): IHttp => {
 
   class wrapper extends apollo {
     constructor() {
@@ -287,7 +287,10 @@ export const wavesApi = (config: IApiConfig, h: IHttp): IWavesApi => {
   })
 }
 
+//return await this.node.get<IAssetInfo>(`assets/details/${assetId}`)
+
 export interface IWavesApi {
+  //getAssetInfo(assetId: string): Promise<IAssetInfo>
   waitForHeight(height: number): Promise<number>
   getHeight(): Promise<number>
   geTxById(txId: string): Promise<TxWithIdAndSender>
