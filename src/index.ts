@@ -13,7 +13,9 @@ import {
 
 export type TxWithIdAndSender = TTx & WithId & WithSender
 
-interface TypeExtension extends WithId, WithSender { }
+interface TypeExtension extends WithId, WithSender {
+  sender: string,
+}
 
 export type MassTransferTransaction = IMassTransferTransaction & TypeExtension
 export type TransferTransaction = ITransferTransaction & TypeExtension
