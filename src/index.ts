@@ -1,118 +1,7 @@
-import {
-  TTx,
-  WithId,
-  WithSender,
-  IOrder,
-  ICancelOrder,
-  IMassTransferTransaction,
-  ITransferTransaction,
-  IDataTransaction,
-  ISetScriptTransaction,
-  IIssueTransaction
-} from '@waves/waves-transactions'
-
-export type TxWithIdAndSender = TTx & WithId & WithSender
-
-interface TypeExtension extends WithId, WithSender {
-  sender: string,
-}
-
-export type MassTransferTransaction = IMassTransferTransaction & TypeExtension
-export type TransferTransaction = ITransferTransaction & TypeExtension
-export type DataTransaction = IDataTransaction & TypeExtension
-export type SetScriptTransaction = ISetScriptTransaction & TypeExtension
-export type IssueTransaction = IIssueTransaction & TypeExtension
-export type Order = IOrder & TypeExtension
-
-export interface IHttp {
-  get: <T>(url: string) => Promise<T>
-  post: <T>(url: string, data: any) => Promise<T>
-}
-
-export const axiosHttp = (axios: any): IHttp => ({
-  get: <T>(url: string) => axios.get(url).then((x: any) => x.data as T),
-  post: <T>(url: string, data: any) => axios.post(url, data).then((x: any) => x.data as T),
-})
-
-export const apolloHttp = (apollo: any): IHttp => {
-
-  class wrapper extends apollo {
-    constructor() {
-      super()
-    }
-
-    async _get(url: string) {
-      return this.get(url)
-    }
-
-    async _post(url: string, data: any) {
-      return this.post(url, data)
-    }
-  }
-
-  const http = new wrapper()
-  http.initialize({ cache: undefined, context: undefined })
-
-  return {
-    get: <T>(url: string) => http.get(url).then((x: any) => x as T),
-    post: <T>(url: string, data: any) => http.post(url, data).then((x: any) => x as T),
-  }
-}
-
-export interface IApiConfig {
-  nodes: string
-  api: string
-  matcher: string
-  matcherPublicKey: string,
-  chainId: string
-}
-
-export const config: { [K in 'testnet' | 'mainnet']: IApiConfig } = {
-  testnet: {
-    nodes: 'https://testnodes.wavesnodes.com/',
-    api: 'https://api.testnet.wavesplatform.com/v0/',
-    matcher: 'https://matcher.testnet.wavesnodes.com/matcher/',
-    matcherPublicKey: '8QUAqtTckM5B8gvcuP7mMswat9SjKUuafJMusEoSn1Gy',
-    chainId: 'T',
-  },
-
-  mainnet: {
-    nodes: 'https://nodes.wavesnodes.com/',
-    api: 'https://api.wavesplatform.com/v0/',
-    matcher: 'https://matcher.wavesnodes.org/matcher/',
-    matcherPublicKey: '7kPFrHDiGw1rCm7LPszuECwWYL3dMf6iMifLRDJQZMzy',
-    chainId: 'W',
-  },
-}
-
-export type DataType = 'binary' | 'integer' | 'boolean' | 'string'
-
-export interface BaseParams {
-  limit?: number
-  timeStart?: number
-  timeEnd?: number
-  sender?: string
-  after?: string
-}
-
-export interface GetMassTransferTxsParams extends BaseParams {
-  recipient?: string
-}
-
-export interface GetTransferTxsParams extends BaseParams {
-  recipient?: string
-}
-
-export interface GetIssueTxsParams extends BaseParams {
-  assetId?: string
-  script?: string
-}
-
-export interface GetDataTxsParams extends BaseParams {
-  key?: string
-  vaue?: string
-  type?: DataType
-}
+import { BaseParams, GetDataTxsParams, DataTransaction, GetMassTransferTxsParams, MassTransferTransaction, GetTransferTxsParams, TransferTransaction, GetIssueTxsParams, IssueTransaction, TxWithIdAndSender, SetScriptTransaction, Order, defaultLimit, defaultSort } from './types'
+import { TTx, IOrder, ICancelOrder } from '@waves/waves-transactions'
+import { IApiConfig } from './config'
+import { IHttp } from './http-bindings'
 
 export const delay = (millis: number): Promise<{}> => new Promise((resolve, _) =>
   setTimeout(resolve, millis)
@@ -174,18 +63,15 @@ export const retry = async <T>(action: () => Promise<T>, limit: number, delayAft
   return await retry(action, limit - 1, delayAfterFail)
 }
 
-export type ApiIterable<T> = AsyncIterable<T> & { first: () => Promise<T> }
+export type ApiIterable<T> = AsyncIterable<T[]> & { first: () => Promise<T[]>, all: () => Promise<T[]> }
 
 export const wavesApi = (config: IApiConfig, h: IHttp): IWavesApi => {
 
   const http = {
     get: <T>(url: string): Promise<T> => {
-      //console.log(url)
       return h.get(url)
     },
     post: <T>(url: string, data: any): Promise<T> => {
-      //console.log(url)
-      //console.log(data)
       return h.post(url, data)
     },
   }
@@ -206,28 +92,38 @@ export const wavesApi = (config: IApiConfig, h: IHttp): IWavesApi => {
   const api = build(config.api)
   const matcher = build(config.matcher)
 
-  const p = (args: any) => Object.entries({ ...args, limit: args.limit || 100 }).map(x => x[1] !== undefined ? `&${x[0]}=` + x[1] : '').join('')
+  const p = (args: BaseParams) => Object.entries({ ...args, limit: args.limit || defaultLimit, sort: args.sort || defaultSort })
+    .map(x => x[1] !== undefined ? `${x[0]}=${x[1]}` : undefined)
+    .filter(x => x !== undefined)
+    .join('&')
 
-  const asyncIterator = <T extends { lastCursor: string }>(fetch: (lastCursor?: string) => Promise<T>) => <R>(map: (value: T) => R) => (options?: { initialCursor?: string, pageLimit?: number }): ApiIterable<R> => {
+  const asyncIterator = <T extends { lastCursor: string }>(fetch: (lastCursor?: string) => Promise<T>) => <R>(map: (value: T) => R[]) => (options?: { initialCursor?: string, pageLimit?: number }): ApiIterable<R> => {
     let cursor = options && options.initialCursor
     let pageCount = 0
 
-    const iterator = {
-      [Symbol.asyncIterator]: () => ({
-        next: async () => {
-          if (pageCount >= (options && options.pageLimit || Number.MAX_SAFE_INTEGER))
-            return { value: {} as R, done: true }
-
-          const data = await fetch(cursor)
-          cursor = data.lastCursor
-          pageCount++
-          return { value: map(data), done: !cursor }
-        },
-      }),
-      first: () => iterator[Symbol.asyncIterator]().next().then(x => x.value),
+    async function* asyncIterator() {
+      do {
+        const data = await fetch(cursor)
+        yield map(data)
+        cursor = data.lastCursor
+        pageCount++
+      } while (cursor && pageCount < (options && options!.pageLimit || Number.MAX_SAFE_INTEGER))
     }
 
-    return iterator
+    const iterator = asyncIterator()
+
+    return {
+      ...iterator,
+      first: () =>
+        iterator[Symbol.asyncIterator]().next().then(x => x.value),
+      all: async () => {
+        const all: R[][] = []
+        for await (const i of iterator) {
+          all.push(i)
+        }
+        return all.reduce((a, b) => [...a, ...b], [])
+      },
+    }
   }
 
   type ApiListReponse<T> = { lastCursor: string, data: { data: T }[] }
@@ -235,12 +131,12 @@ export const wavesApi = (config: IApiConfig, h: IHttp): IWavesApi => {
   const buildEndpoint = <TParams extends BaseParams, T>(url: string) =>
     (params: TParams, options?: PagingOptions) =>
       asyncIterator<ApiListReponse<T>>((lastCursor?: string) =>
-        api.get<ApiListReponse<T>>(`${url}${p({ ...params, after: lastCursor })}`))(x => x.data.map(y => y.data))(options)
+        api.post<ApiListReponse<T>>(url, { ...params, after: lastCursor }))(x => x.data.map(y => y.data))(options)
 
-  const getDataTxs = buildEndpoint<GetDataTxsParams, DataTransaction>('transactions/data?sort=desc')
-  const getMassTransfersTxs = buildEndpoint<GetMassTransferTxsParams, MassTransferTransaction>('transactions/mass-transfer?sort=desc')
-  const getTransfersTxs = buildEndpoint<GetTransferTxsParams, TransferTransaction>('transactions/transfer?sort=desc')
-  const getIssueTxs = buildEndpoint<GetIssueTxsParams, IssueTransaction>('transactions/issue?sort=desc')
+  const getDataTxs = buildEndpoint<GetDataTxsParams, DataTransaction>('transactions/data?')
+  const getMassTransfersTxs = buildEndpoint<GetMassTransferTxsParams, MassTransferTransaction>('transactions/mass-transfer?')
+  const getTransfersTxs = buildEndpoint<GetTransferTxsParams, TransferTransaction>('transactions/transfer?')
+  const getIssueTxs = buildEndpoint<GetIssueTxsParams, IssueTransaction>('transactions/issue?')
 
   const getHeight = async () =>
     node.get<{ height: number }>('blocks/last').then(x => x.height)
@@ -328,10 +224,10 @@ export interface IWavesApi {
   broadcast(tx: TTx): Promise<TxWithIdAndSender>
   broadcastAndWait(tx: TTx): Promise<TxWithIdAndSender>
   waitForTx(txId: string): Promise<TxWithIdAndSender>
-  getDataTxs(params: GetDataTxsParams, options?: PagingOptions): ApiIterable<DataTransaction[]>
-  getMassTransfersTxs(params: GetMassTransferTxsParams, options?: PagingOptions): ApiIterable<MassTransferTransaction[]>
-  getIssueTxs(params: GetIssueTxsParams, options?: PagingOptions): ApiIterable<IssueTransaction[]>
-  getTransfersTxs(params: GetTransferTxsParams, options?: PagingOptions): ApiIterable<TransferTransaction[]>
+  getDataTxs(params: GetDataTxsParams, options?: PagingOptions): ApiIterable<DataTransaction>
+  getMassTransfersTxs(params: GetMassTransferTxsParams, options?: PagingOptions): ApiIterable<MassTransferTransaction>
+  getIssueTxs(params: GetIssueTxsParams, options?: PagingOptions): ApiIterable<IssueTransaction>
+  getTransfersTxs(params: GetTransferTxsParams, options?: PagingOptions): ApiIterable<TransferTransaction>
   geTxsByAddress(address: string, limit?: number): Promise<TxWithIdAndSender[]>
   getUtx(): Promise<TxWithIdAndSender[]>
   getSetScripTxsByScript(script: string, limit?: number): Promise<SetScriptTransaction[]>
