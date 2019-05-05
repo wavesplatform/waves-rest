@@ -220,6 +220,7 @@ export const wavesApi = (config: IApiConfig, h: IHttp): IWavesApi => {
     getBalance,
     getUtx,
     getSetScripTxsByScript,
+    getOrderbookPair,
     placeOrder,
     cancelOrder,
     config,
@@ -250,6 +251,7 @@ export interface IWavesApi {
   getUtx(): Promise<TxWithIdAndSender[]>
   getSetScripTxsByScript(script: string, limit?: number): Promise<SetScriptTransaction[]>
   getBalance(address: string): Promise<number>
+  getOrderbookPair(amountAsset: string, priceAsset: string): Promise<OrderbookPair>
   placeOrder(order: IOrder): Promise<Order>
   cancelOrder(amountAsset: string, priceAsset: string, cancelOrder: ICancelOrder): Promise<void>
   config: IApiConfig
