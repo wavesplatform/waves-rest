@@ -11,7 +11,6 @@ import {
   IIssueTransaction
 } from '@waves/waves-transactions'
 
-
 export type Sort = 'asc' | 'desc'
 
 export const defaultSort: Sort = 'desc'
@@ -23,7 +22,7 @@ export type DataType = 'binary' | 'integer' | 'boolean' | 'string'
 export type TxWithIdAndSender = TTx & WithId & WithSender
 
 interface TypeExtension extends WithId, WithSender {
-  sender: string,
+  sender: string
 }
 
 export type MassTransferTransaction = IMassTransferTransaction & TypeExtension
@@ -74,8 +73,7 @@ export interface GetLeaseTxsParams extends BaseParams {
   recipient?: string
 }
 
-export interface GetLeaseCancelTxsParams extends BaseParams {
-}
+export interface GetLeaseCancelTxsParams extends BaseParams {}
 
 export interface GetDataTxsParams extends BaseParams {
   key?: string
@@ -83,3 +81,13 @@ export interface GetDataTxsParams extends BaseParams {
   type?: DataType
 }
 
+export type AmountPricePair = {
+  amountAsset: string
+  priceAsset: string
+}
+
+export interface OrderbookPair {
+  pair: AmountPricePair
+  bids: { amount: number; price: number }[]
+  asks: { amount: number; price: number }[]
+}

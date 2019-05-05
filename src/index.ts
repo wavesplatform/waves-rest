@@ -1,12 +1,25 @@
-import { BaseParams, GetDataTxsParams, DataTransaction, GetMassTransferTxsParams, MassTransferTransaction, GetTransferTxsParams, TransferTransaction, GetIssueTxsParams, IssueTransaction, TxWithIdAndSender, SetScriptTransaction, Order, defaultLimit, defaultSort } from './types'
+import {
+  BaseParams,
+  GetDataTxsParams,
+  DataTransaction,
+  GetMassTransferTxsParams,
+  MassTransferTransaction,
+  GetTransferTxsParams,
+  TransferTransaction,
+  GetIssueTxsParams,
+  IssueTransaction,
+  TxWithIdAndSender,
+  SetScriptTransaction,
+  Order,
+  defaultLimit,
+  defaultSort,
+  OrderbookPair
+} from './types'
 import { TTx, IOrder, ICancelOrder } from '@waves/waves-transactions'
 import { IApiConfig } from './config'
 import { IHttp } from './http-bindings'
 
-export const delay = (millis: number): Promise<{}> => new Promise((resolve, _) =>
-  setTimeout(resolve, millis)
-  // test
-)
+export const delay = (millis: number): Promise<{}> => new Promise((resolve, _) => setTimeout(resolve, millis))
 
 const wrapError = (error: any) => {
   let er
@@ -54,20 +67,17 @@ export const retry = async <T>(action: () => Promise<T>, limit: number, delayAft
     return await action()
   } catch (error) {
     const er = wrapError(error)
-    if (er && er.code)
-      throw er
-    if (limit < 1)
-      throw er
+    if (er && er.code) throw er
+    if (limit < 1) throw er
   }
 
   await delay(delayAfterFail)
   return await retry(action, limit - 1, delayAfterFail)
 }
 
-export type ApiIterable<T> = AsyncIterable<T[]> & { first: () => Promise<T[]>, all: () => Promise<T[]> }
+export type ApiIterable<T> = AsyncIterable<T[]> & { first: () => Promise<T[]>; all: () => Promise<T[]> }
 
 export const wavesApi = (config: IApiConfig, h: IHttp): IWavesApi => {
-
   const http = {
     get: <T>(url: string): Promise<T> => {
       return h.get(url)
@@ -78,11 +88,7 @@ export const wavesApi = (config: IApiConfig, h: IHttp): IWavesApi => {
   }
 
   const httpCall = <T>(base: string, endpoint: string, data?: any) =>
-    retry(() =>
-      data ?
-        http.post<T>(base + endpoint, data) :
-        http.get<T>(base + endpoint),
-      5, 1000)
+    retry(() => (data ? http.post<T>(base + endpoint, data) : http.get<T>(base + endpoint)), 5, 1000)
 
   const build = (base: string) => ({
     get: <T>(endpoint: string): Promise<T> => httpCall(base, endpoint),
@@ -93,12 +99,15 @@ export const wavesApi = (config: IApiConfig, h: IHttp): IWavesApi => {
   const api = build(config.api)
   const matcher = build(config.matcher)
 
-  const p = (args: BaseParams) => Object.entries({ ...args, limit: args.limit || defaultLimit, sort: args.sort || defaultSort })
-    .map(x => x[1] !== undefined ? `${x[0]}=${x[1]}` : undefined)
-    .filter(x => x !== undefined)
-    .join('&')
+  const p = (args: BaseParams) =>
+    Object.entries({ ...args, limit: args.limit || defaultLimit, sort: args.sort || defaultSort })
+      .map(x => (x[1] !== undefined ? `${x[0]}=${x[1]}` : undefined))
+      .filter(x => x !== undefined)
+      .join('&')
 
-  const asyncIterator = <T extends { lastCursor: string }>(fetch: (lastCursor?: string) => Promise<T>) => <R>(map: (value: T) => R[]) => (options?: { initialCursor?: string, pageLimit?: number }): ApiIterable<R> => {
+  const asyncIterator = <T extends { lastCursor: string }>(fetch: (lastCursor?: string) => Promise<T>) => <R>(
+    map: (value: T) => R[]
+  ) => (options?: { initialCursor?: string; pageLimit?: number }): ApiIterable<R> => {
     let cursor = options && options.initialCursor
     let pageCount = 0
 
@@ -108,7 +117,7 @@ export const wavesApi = (config: IApiConfig, h: IHttp): IWavesApi => {
         yield map(data)
         cursor = data.lastCursor
         pageCount++
-      } while (cursor && pageCount < (options && options!.pageLimit || Number.MAX_SAFE_INTEGER))
+      } while (cursor && pageCount < ((options && options!.pageLimit) || Number.MAX_SAFE_INTEGER))
     }
 
     const iterator = asyncIterator()
@@ -116,7 +125,9 @@ export const wavesApi = (config: IApiConfig, h: IHttp): IWavesApi => {
     return {
       ...iterator,
       first: () =>
-        iterator[Symbol.asyncIterator]().next().then(x => x.value),
+        iterator[Symbol.asyncIterator]()
+          .next()
+          .then(x => x.value),
       all: async () => {
         const all: R[][] = []
         for await (const i of iterator) {
@@ -127,20 +138,21 @@ export const wavesApi = (config: IApiConfig, h: IHttp): IWavesApi => {
     }
   }
 
-  type ApiListReponse<T> = { lastCursor: string, data: { data: T }[] }
+  type ApiListReponse<T> = { lastCursor: string; data: { data: T }[] }
 
-  const buildEndpoint = <TParams extends BaseParams, T>(url: string) =>
-    (params: TParams, options?: PagingOptions) =>
-      asyncIterator<ApiListReponse<T>>((lastCursor?: string) =>
-        api.post<ApiListReponse<T>>(url, { ...params, after: lastCursor }))(x => x.data.map(y => y.data))(options)
+  const buildEndpoint = <TParams extends BaseParams, T>(url: string) => (params: TParams, options?: PagingOptions) =>
+    asyncIterator<ApiListReponse<T>>((lastCursor?: string) =>
+      api.post<ApiListReponse<T>>(url, { ...params, after: lastCursor })
+    )(x => x.data.map(y => y.data))(options)
 
   const getDataTxs = buildEndpoint<GetDataTxsParams, DataTransaction>('transactions/data?')
-  const getMassTransfersTxs = buildEndpoint<GetMassTransferTxsParams, MassTransferTransaction>('transactions/mass-transfer?')
+  const getMassTransfersTxs = buildEndpoint<GetMassTransferTxsParams, MassTransferTransaction>(
+    'transactions/mass-transfer?'
+  )
   const getTransfersTxs = buildEndpoint<GetTransferTxsParams, TransferTransaction>('transactions/transfer?')
   const getIssueTxs = buildEndpoint<GetIssueTxsParams, IssueTransaction>('transactions/issue?')
 
-  const getHeight = async () =>
-    node.get<{ height: number }>('blocks/last').then(x => x.height)
+  const getHeight = async () => node.get<{ height: number }>('blocks/last').then(x => x.height)
 
   const geTxById = async (txId: string): Promise<TxWithIdAndSender> =>
     node.get<TxWithIdAndSender>(`transactions/info/${txId}`)
@@ -151,8 +163,7 @@ export const wavesApi = (config: IApiConfig, h: IHttp): IWavesApi => {
   const broadcast = async (tx: TTx): Promise<TxWithIdAndSender> =>
     node.post<TxWithIdAndSender>('transactions/broadcast', tx)
 
-  const waitForTx = async (txId: string): Promise<TxWithIdAndSender> =>
-    retry(async () => geTxById(txId), 999, 1000)
+  const waitForTx = async (txId: string): Promise<TxWithIdAndSender> => retry(async () => geTxById(txId), 999, 1000)
 
   const geTxsByAddress = async (address: string, limit: number = 100): Promise<TxWithIdAndSender[]> =>
     (await node.get<TxWithIdAndSender[][]>(`transactions/address/${address}/limit/${limit}`))[0]
@@ -160,25 +171,32 @@ export const wavesApi = (config: IApiConfig, h: IHttp): IWavesApi => {
   const broadcastAndWait = async (tx: TxWithIdAndSender): Promise<TxWithIdAndSender> =>
     await broadcast(tx).then(x => waitForTx(x.id))
 
-  const getUtx = (): Promise<TxWithIdAndSender[]> =>
-    node.get<TxWithIdAndSender[]>('transactions/unconfirmed')
+  const getUtx = (): Promise<TxWithIdAndSender[]> => node.get<TxWithIdAndSender[]>('transactions/unconfirmed')
 
   const getBalance = (address: string): Promise<number> =>
     node.get<{ available: number }>(`addresses/balance/details/${address}`).then(x => x.available)
 
   const getSetScripTxsByScript = (script: string, limit: number = 100): Promise<SetScriptTransaction[]> =>
-    api.post<{ data: { data: SetScriptTransaction }[] }>('transactions/set-script', {
-      script: 'base64:' + script,
-      limit,
-    }).then(x => x.data.map(y => y.data))
+    api
+      .post<{ data: { data: SetScriptTransaction }[] }>('transactions/set-script', {
+        script: 'base64:' + script,
+        limit,
+      })
+      .then(x => x.data.map(y => y.data))
 
   const waitForHeight = (height: number): Promise<number> =>
-    retry(async () => {
-      const h = await getHeight()
-      if (h < height)
-        throw 'Still waiting'
-      return h
-    }, 999, 5000)
+    retry(
+      async () => {
+        const h = await getHeight()
+        if (h < height) throw 'Still waiting'
+        return h
+      },
+      999,
+      5000
+    )
+
+  const getOrderbookPair = async (amountAsset: string, priceAsset: string): Promise<OrderbookPair> =>
+    matcher.get<OrderbookPair>(`orderbook/${amountAsset}/${priceAsset}`)
 
   const placeOrder = async (order: IOrder) =>
     matcher.post<{ message: any }>('orderbook', order).then(x => x.message as Order)
@@ -214,7 +232,6 @@ export interface PagingOptions {
   initialCursor?: string
   pageLimit?: number
 }
-
 
 export interface IWavesApi {
   //getAssetInfo(assetId: string): Promise<IAssetInfo>
