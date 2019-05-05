@@ -5,6 +5,7 @@ import { IHttp } from './http-bindings'
 
 export const delay = (millis: number): Promise<{}> => new Promise((resolve, _) =>
   setTimeout(resolve, millis)
+  // test
 )
 
 const wrapError = (error: any) => {
