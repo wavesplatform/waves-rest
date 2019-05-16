@@ -1,20 +1,25 @@
-import { wavesApi, config, axiosHttp } from '../src'
+import { wavesApi } from '../src'
 import axios from 'axios'
 import { order, cancelOrder as co } from '@waves/waves-transactions'
+import { config } from '../src/config'
+import { axiosHttp } from '../src/http-bindings'
 
 const { placeOrder, cancelOrder } = wavesApi(config.testnet, axiosHttp(axios))
 
 export const testingHostSeed = 'a897148d797746499489466437b300aa87d8d2e6066f40448a3860729bca1a5e'
 
 const main = async () => {
-  const ord = order({
-    amount: 1,
-    price: Math.round(0.1 * Math.pow(10, 16)),
-    amountAsset: 'FSL5oQL7YEE7B4qJvKo4gcxaKAKJT8UyjkBtaGTdjHiK',
-    priceAsset: null,
-    orderType: 'buy',
-    matcherPublicKey: config.testnet.matcherPublicKey,
-  }, testingHostSeed)
+  const ord = order(
+    {
+      amount: 1,
+      price: Math.round(0.1 * Math.pow(10, 16)),
+      amountAsset: 'FSL5oQL7YEE7B4qJvKo4gcxaKAKJT8UyjkBtaGTdjHiK',
+      priceAsset: null,
+      orderType: 'buy',
+      matcherPublicKey: config.testnet.matcherPublicKey,
+    },
+    testingHostSeed
+  )
 
   try {
     const r1 = await placeOrder(ord)
@@ -25,7 +30,6 @@ const main = async () => {
   } catch (error) {
     console.log(error)
   }
-
 }
 
 main()

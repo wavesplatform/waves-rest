@@ -11,6 +11,7 @@ import {
   IIssueTransaction
 } from '@waves/waves-transactions'
 
+export type LONG = string | number
 export type Sort = 'asc' | 'desc'
 
 export const defaultSort: Sort = 'desc'
@@ -86,8 +87,13 @@ export type AmountPricePair = {
   priceAsset: string
 }
 
+export type AmountPrice = {
+  amount: number
+  price: number
+}
+
 export interface OrderbookPair {
   pair: AmountPricePair
-  bids: { amount: number; price: number }[]
-  asks: { amount: number; price: number }[]
+  bids: AmountPrice[]
+  asks: AmountPrice[]
 }
