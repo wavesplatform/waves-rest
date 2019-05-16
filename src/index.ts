@@ -154,7 +154,7 @@ export const wavesApi = (config: IApiConfig, h: IHttp): IWavesApi => {
 
   const getHeight = async () => node.get<{ height: number }>('blocks/last').then(x => x.height)
 
-  const geTxById = async (txId: string): Promise<TxWithIdAndSender> =>
+  const getTxById = async (txId: string): Promise<TxWithIdAndSender> =>
     node.get<TxWithIdAndSender>(`transactions/info/${txId}`)
 
   const getUtxById = async (txId: string): Promise<TxWithIdAndSender> =>
@@ -163,7 +163,7 @@ export const wavesApi = (config: IApiConfig, h: IHttp): IWavesApi => {
   const broadcast = async (tx: TTx): Promise<TxWithIdAndSender> =>
     node.post<TxWithIdAndSender>('transactions/broadcast', tx)
 
-  const waitForTx = async (txId: string): Promise<TxWithIdAndSender> => retry(async () => geTxById(txId), 999, 1000)
+  const waitForTx = async (txId: string): Promise<TxWithIdAndSender> => retry(async () => getTxById(txId), 999, 1000)
 
   const geTxsByAddress = async (address: string, limit: number = 100): Promise<TxWithIdAndSender[]> =>
     (await node.get<TxWithIdAndSender[][]>(`transactions/address/${address}/limit/${limit}`))[0]
@@ -207,7 +207,7 @@ export const wavesApi = (config: IApiConfig, h: IHttp): IWavesApi => {
   return Object.freeze({
     waitForHeight,
     getHeight,
-    geTxById,
+    getTxById,
     getUtxById,
     broadcast,
     waitForTx,
@@ -238,7 +238,7 @@ export interface IWavesApi {
   //getAssetInfo(assetId: string): Promise<IAssetInfo>
   waitForHeight(height: number): Promise<number>
   getHeight(): Promise<number>
-  geTxById(txId: string): Promise<TxWithIdAndSender>
+  getTxById(txId: string): Promise<TxWithIdAndSender>
   getUtxById(txId: string): Promise<TxWithIdAndSender>
   broadcast(tx: TTx): Promise<TxWithIdAndSender>
   broadcastAndWait(tx: TTx): Promise<TxWithIdAndSender>
