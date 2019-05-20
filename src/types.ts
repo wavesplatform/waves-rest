@@ -82,6 +82,18 @@ export interface GetDataTxsParams extends BaseParams {
   type?: DataType
 }
 
+export interface AssetBalance {
+  assetId: string
+  balance: LONG
+  quantity: LONG
+  reissuable?: boolean
+}
+
+export interface GetAssetsBalanceParams {
+  address: string
+  balances?: AssetBalance[]
+}
+
 export type AmountPricePair = {
   amountAsset: string
   priceAsset: string

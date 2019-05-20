@@ -13,7 +13,8 @@ import {
   Order,
   defaultLimit,
   defaultSort,
-  OrderbookPair
+  OrderbookPair,
+  GetAssetsBalanceParams
 } from './types'
 import { TTx, IOrder, ICancelOrder } from '@waves/waves-transactions'
 import { IApiConfig } from './config'
@@ -176,6 +177,8 @@ export const wavesApi = (config: IApiConfig, h: IHttp): IWavesApi => {
   const getBalance = (address: string): Promise<number> =>
     node.get<{ available: number }>(`addresses/balance/details/${address}`).then(x => x.available)
 
+  const getAssetsBalance = (address: string): Promise<GetAssetsBalanceParams> => node.get(`assets/balance/${address}`)
+
   const getSetScripTxsByScript = (script: string, limit: number = 100): Promise<SetScriptTransaction[]> =>
     api
       .post<{ data: { data: SetScriptTransaction }[] }>('transactions/set-script', {
@@ -218,6 +221,7 @@ export const wavesApi = (config: IApiConfig, h: IHttp): IWavesApi => {
     getTransfersTxs,
     getIssueTxs,
     getBalance,
+    getAssetsBalance,
     getUtx,
     getSetScripTxsByScript,
     getOrderbookPair,
@@ -251,6 +255,7 @@ export interface IWavesApi {
   getUtx(): Promise<TxWithIdAndSender[]>
   getSetScripTxsByScript(script: string, limit?: number): Promise<SetScriptTransaction[]>
   getBalance(address: string): Promise<number>
+  getAssetsBalance(address: string): Promise<GetAssetsBalanceParams>
   getOrderbookPair(amountAsset: string, priceAsset: string): Promise<OrderbookPair>
   placeOrder(order: IOrder): Promise<Order>
   cancelOrder(amountAsset: string, priceAsset: string, cancelOrder: ICancelOrder): Promise<void>
