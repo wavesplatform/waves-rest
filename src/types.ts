@@ -74,7 +74,7 @@ export interface GetLeaseTxsParams extends BaseParams {
   recipient?: string
 }
 
-export interface GetLeaseCancelTxsParams extends BaseParams {}
+export interface GetLeaseCancelTxsParams extends BaseParams { }
 
 export interface GetDataTxsParams extends BaseParams {
   key?: string
@@ -108,4 +108,24 @@ export interface OrderbookPair {
   pair: AmountPricePair
   bids: AmountPrice[]
   asks: AmountPrice[]
+}
+
+export interface Distribution {
+  hasNext: boolean
+  lastItem: string
+  items: { [address: string]: number }
+}
+
+export interface AssetInfo {
+  assetId: string
+  issueHeight: number
+  issueTimestamp: number
+  issuer: string
+  name: string
+  description: string
+  decimals: number
+  reissuable: boolean
+  quantity: number
+  scripted: boolean
+  minSponsoredAssetFee: number | null
 }

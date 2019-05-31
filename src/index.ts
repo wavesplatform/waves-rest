@@ -14,7 +14,9 @@ import {
   defaultLimit,
   defaultSort,
   OrderbookPair,
-  GetAssetsBalanceParams
+  GetAssetsBalanceParams,
+  Distribution,
+  AssetInfo
 } from './types'
 import { TTx, IOrder, ICancelOrder } from '@waves/waves-transactions'
 import { IApiConfig } from './config'
@@ -172,6 +174,12 @@ export const wavesApi = (config: IApiConfig, h: IHttp): IWavesApi => {
   const broadcastAndWait = async (tx: TxWithIdAndSender): Promise<TxWithIdAndSender> =>
     await broadcast(tx).then(x => waitForTx(x.id))
 
+  const getAssetDistribution = async (assetId: string, height?: number, limit: number = 999): Promise<Distribution> =>
+    await node.get<Distribution>(`assets/${assetId}/distribution/${height || await getHeight() - 1}/limit/${limit}`)
+
+  const getAssetInfo = async (assetId: string): Promise<AssetInfo> =>
+    await node.get<AssetInfo>(`assets/details/${assetId}`)
+
   const getUtx = (): Promise<TxWithIdAndSender[]> => node.get<TxWithIdAndSender[]>('transactions/unconfirmed')
 
   const getBalance = (address: string): Promise<number> =>
@@ -222,9 +230,11 @@ export const wavesApi = (config: IApiConfig, h: IHttp): IWavesApi => {
     getIssueTxs,
     getBalance,
     getAssetsBalance,
+    getAssetInfo,
     getUtx,
     getSetScripTxsByScript,
     getOrderbookPair,
+    getAssetDistribution,
     placeOrder,
     cancelOrder,
     config,
@@ -255,7 +265,9 @@ export interface IWavesApi {
   getUtx(): Promise<TxWithIdAndSender[]>
   getSetScripTxsByScript(script: string, limit?: number): Promise<SetScriptTransaction[]>
   getBalance(address: string): Promise<number>
+  getAssetDistribution(assetId: string, height?: number, limit?: number): Promise<Distribution>
   getAssetsBalance(address: string): Promise<GetAssetsBalanceParams>
+  getAssetInfo(assetId: string): Promise<AssetInfo>
   getOrderbookPair(amountAsset: string, priceAsset: string): Promise<OrderbookPair>
   placeOrder(order: IOrder): Promise<Order>
   cancelOrder(amountAsset: string, priceAsset: string, cancelOrder: ICancelOrder): Promise<void>
