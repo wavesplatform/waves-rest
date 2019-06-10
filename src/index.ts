@@ -18,9 +18,33 @@ import {
   Distribution,
   AssetInfo
 } from './types'
+
+export {
+  BaseParams,
+  GetDataTxsParams,
+  DataTransaction,
+  GetMassTransferTxsParams,
+  MassTransferTransaction,
+  GetTransferTxsParams,
+  TransferTransaction,
+  GetIssueTxsParams,
+  IssueTransaction,
+  TxWithIdAndSender,
+  SetScriptTransaction,
+  Order,
+  defaultLimit,
+  defaultSort,
+  OrderbookPair,
+  GetAssetsBalanceParams,
+  Distribution,
+  AssetInfo
+} from './types'
+
 import { TTx, IOrder, ICancelOrder } from '@waves/waves-transactions'
 import { IApiConfig } from './config'
 import { IHttp } from './http-bindings'
+export { IHttp, axiosHttp, apolloHttp } from './http-bindings'
+export { IApiConfig, config } from './config'
 
 export const delay = (millis: number): Promise<{}> => new Promise((resolve, _) => setTimeout(resolve, millis))
 
@@ -153,6 +177,7 @@ export const wavesApi = (config: IApiConfig, h: IHttp): IWavesApi => {
     'transactions/mass-transfer?'
   )
   const getTransfersTxs = buildEndpoint<GetTransferTxsParams, TransferTransaction>('transactions/transfer?')
+
   const getIssueTxs = buildEndpoint<GetIssueTxsParams, IssueTransaction>('transactions/issue?')
 
   const getHeight = async () => node.get<{ height: number }>('blocks/last').then(x => x.height)
@@ -215,6 +240,12 @@ export const wavesApi = (config: IApiConfig, h: IHttp): IWavesApi => {
   const cancelOrder = async (amountAsset: string, priceAsset: string, cancelOrder: ICancelOrder) =>
     matcher.post<void>(`orderbook/${amountAsset}/${priceAsset}/cancel`, cancelOrder)
 
+  const getKeyValuePairs = (address: string): Promise<KeyValuePair[]> =>
+    node.get<KeyValuePair[]>(`addresses/data/${address}`)
+
+  const getValueByKey = (address: string, key: string): Promise<KeyValuePair> =>
+    node.get<KeyValuePair>(`addresses/data/${address}/${key}`)
+
   return Object.freeze({
     waitForHeight,
     getHeight,
@@ -226,6 +257,8 @@ export const wavesApi = (config: IApiConfig, h: IHttp): IWavesApi => {
     geTxsByAddress,
     broadcastAndWait,
     getMassTransfersTxs,
+    getKeyValuePairs,
+    getValueByKey,
     getTransfersTxs,
     getIssueTxs,
     getBalance,
@@ -248,6 +281,12 @@ export interface PagingOptions {
   pageLimit?: number
 }
 
+export interface KeyValuePair {
+  type: string
+  value: string
+  key: string
+}
+
 export interface IWavesApi {
   //getAssetInfo(assetId: string): Promise<IAssetInfo>
   waitForHeight(height: number): Promise<number>
@@ -258,6 +297,8 @@ export interface IWavesApi {
   broadcastAndWait(tx: TTx): Promise<TxWithIdAndSender>
   waitForTx(txId: string): Promise<TxWithIdAndSender>
   getDataTxs(params: GetDataTxsParams, options?: PagingOptions): ApiIterable<DataTransaction>
+  getKeyValuePairs(address: string): Promise<KeyValuePair[]>
+  getValueByKey(address: string, key: string): Promise<KeyValuePair>
   getMassTransfersTxs(params: GetMassTransferTxsParams, options?: PagingOptions): ApiIterable<MassTransferTransaction>
   getIssueTxs(params: GetIssueTxsParams, options?: PagingOptions): ApiIterable<IssueTransaction>
   getTransfersTxs(params: GetTransferTxsParams, options?: PagingOptions): ApiIterable<TransferTransaction>
