@@ -74,7 +74,7 @@ export interface GetLeaseTxsParams extends BaseParams {
   recipient?: string
 }
 
-export interface GetLeaseCancelTxsParams extends BaseParams { }
+export interface GetLeaseCancelTxsParams extends BaseParams {}
 
 export interface GetDataTxsParams extends BaseParams {
   key?: string
@@ -100,8 +100,8 @@ export type AmountPricePair = {
 }
 
 export type AmountPrice = {
-  amount: number
-  price: number
+  amount: string
+  price: string
 }
 
 export interface OrderbookPair {
