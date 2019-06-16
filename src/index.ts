@@ -16,7 +16,8 @@ import {
   OrderbookPair,
   GetAssetsBalanceParams,
   Distribution,
-  AssetInfo
+  AssetInfo,
+  CandlesResponse
 } from './types'
 
 export {
@@ -45,6 +46,9 @@ import { IApiConfig } from './config'
 import { IHttp } from './http-bindings'
 export { IHttp, axiosHttp, apolloHttp } from './http-bindings'
 export { IApiConfig, config } from './config'
+
+
+
 
 export const delay = (millis: number): Promise<{}> => new Promise((resolve, _) => setTimeout(resolve, millis))
 
@@ -122,6 +126,7 @@ export const wavesApi = (config: IApiConfig, h: IHttp): IWavesApi => {
     post: <T>(endpoint: string, data: any): Promise<T> => httpCall(base, endpoint, data),
   })
 
+  const marketdata = build('https://marketdata.wavesplatform.com/api/')
   const node = build(config.nodes)
   const api = build(config.api)
   const matcher = build(config.matcher)
@@ -235,7 +240,7 @@ export const wavesApi = (config: IApiConfig, h: IHttp): IWavesApi => {
     matcher.get<OrderbookPair>(`orderbook/${amountAsset}/${priceAsset}`)
 
   const placeOrder = async (order: IOrder) =>
-    matcher.post<{ message: any }>('orderbook', order).then(x => x.message as Order)
+    matcher.post<{ message: Order }>('orderbook', order).then(x => x.message)
 
   const cancelOrder = async (amountAsset: string, priceAsset: string, cancelOrder: ICancelOrder) =>
     matcher.post<void>(`orderbook/${amountAsset}/${priceAsset}/cancel`, cancelOrder)
@@ -245,6 +250,15 @@ export const wavesApi = (config: IApiConfig, h: IHttp): IWavesApi => {
 
   const getValueByKey = (address: string, key: string): Promise<KeyValuePair> =>
     node.get<KeyValuePair>(`addresses/data/${address}/${key}`)
+
+  const getWavesExchangeRate = (to: 'btc' | 'usd'): Promise<number> => {
+    const map = {
+      btc: '8LQW8f7P5d5PZM7GtZEBgaqRPGSzS3DfPuiXrURJ4AJS',
+      usd: 'Ft8X1v1LTa1ABafufpaCWyVj8KkaxUWE6xBhW6sNFJck',
+    }
+
+    return marketdata.get<CandlesResponse[]>(`candles/WAVES/${map[to]}/1440/1`).then(x => parseFloat(x[0].close))
+  }
 
   return Object.freeze({
     waitForHeight,
@@ -270,6 +284,7 @@ export const wavesApi = (config: IApiConfig, h: IHttp): IWavesApi => {
     getAssetDistribution,
     placeOrder,
     cancelOrder,
+    getWavesExchangeRate,
     config,
   })
 }
@@ -312,5 +327,6 @@ export interface IWavesApi {
   getOrderbookPair(amountAsset: string, priceAsset: string): Promise<OrderbookPair>
   placeOrder(order: IOrder): Promise<Order>
   cancelOrder(amountAsset: string, priceAsset: string, cancelOrder: ICancelOrder): Promise<void>
+  getWavesExchangeRate(to: 'btc' | 'usd'): Promise<number>
   config: IApiConfig
 }

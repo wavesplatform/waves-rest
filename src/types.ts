@@ -74,7 +74,7 @@ export interface GetLeaseTxsParams extends BaseParams {
   recipient?: string
 }
 
-export interface GetLeaseCancelTxsParams extends BaseParams {}
+export interface GetLeaseCancelTxsParams extends BaseParams { }
 
 export interface GetDataTxsParams extends BaseParams {
   key?: string
@@ -128,4 +128,17 @@ export interface AssetInfo {
   quantity: number
   scripted: boolean
   minSponsoredAssetFee: number | null
+}
+
+
+export interface CandlesResponse {
+  timestamp: number
+  open: string
+  high: string
+  low: string
+  close: string
+  vwap: string
+  volume: string
+  priceVolume: string
+  confirmed: boolean
 }
