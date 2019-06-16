@@ -10,7 +10,7 @@ const main = async () => {
 
   try {
     const balance = await getAssetsBalance(address)
-    console.log(balance)
+    console.log(balance.balances.map(x => x.issueTransaction))
   } catch (error) {
     console.log(error)
   }

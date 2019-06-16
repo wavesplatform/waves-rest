@@ -84,14 +84,12 @@ export interface GetDataTxsParams extends BaseParams {
 
 export interface AssetBalance {
   assetId: string
-  balance: LONG
-  quantity: LONG
-  reissuable?: boolean
-}
-
-export interface GetAssetsBalanceParams {
-  address: string
-  balances?: AssetBalance[]
+  balance: number
+  reissuable: boolean
+  minSponsoredAssetFee: number | null
+  sponsorBalance: number | null
+  quantity: number
+  issueTransaction: IssueTransaction
 }
 
 export type AmountPricePair = {
@@ -130,7 +128,6 @@ export interface AssetInfo {
   minSponsoredAssetFee: number | null
 }
 
-
 export interface CandlesResponse {
   timestamp: number
   open: string
@@ -141,4 +138,9 @@ export interface CandlesResponse {
   volume: string
   priceVolume: string
   confirmed: boolean
+}
+
+export interface GetAssetsBalanceResponse {
+  address: string
+  balances: AssetBalance[]
 }
