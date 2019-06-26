@@ -70,11 +70,15 @@ const wrapError = (error: any) => {
         }
         break
       case 306: //error while executing
+        console.log(error.response.data)
         er = {
           code: 306,
           message: error.response.data.message,
           tx: error.response.data.transaction,
-          vars: error.response.data.vars.reduce((a: [], b: []) => [...a, ...b], []),
+          trace: error.response.data.trace,
+        }
+        if (error.response.data.vars) {
+          (<any>er).vars = error.response.data.vars.reduce((a: [], b: []) => [...a, ...b], [])
         }
         break
       case 307: //not allowed by account script
@@ -82,7 +86,11 @@ const wrapError = (error: any) => {
           code: 307,
           message: error.response.data.message,
           tx: error.response.data.transaction,
+          trace: error.response.data.trace,
           vars: error.response.data.vars.reduce((a: [], b: []) => [...a, ...b], []),
+        }
+        if (error.response.data.vars) {
+          (<any>er).vars = error.response.data.vars.reduce((a: [], b: []) => [...a, ...b], [])
         }
         break
       default:
