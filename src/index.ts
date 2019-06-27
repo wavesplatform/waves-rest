@@ -18,7 +18,8 @@ import {
   Distribution,
   AssetInfo,
   CandlesResponse,
-  IScriptInfo
+  IScriptInfo,
+  IScriptDecompileResult
 } from './types'
 
 export {
@@ -270,6 +271,9 @@ export const wavesApi = (config: IApiConfig, h: IHttp): IWavesApi => {
   const getScriptInfo = (address: string): Promise<IScriptInfo> =>
     node.get<IScriptInfo>(`addresses/scriptInfo/${address}`)
 
+  const decompileScript = (scriptBinary: string) =>
+    node.post<IScriptDecompileResult>('utils/script/decompile', scriptBinary)
+
   return Object.freeze({
     waitForHeight,
     getHeight,
@@ -285,6 +289,7 @@ export const wavesApi = (config: IApiConfig, h: IHttp): IWavesApi => {
     getValueByKey,
     getTransfersTxs,
     getScriptInfo,
+    decompileScript,
     getIssueTxs,
     getBalance,
     getAssetsBalance,
@@ -331,6 +336,7 @@ export interface IWavesApi {
   geTxsByAddress(address: string, limit?: number): Promise<TxWithIdAndSender[]>
   getUtx(): Promise<TxWithIdAndSender[]>
   getScriptInfo(address: string): Promise<IScriptInfo>
+  decompileScript(scriptBinary: string): Promise<IScriptDecompileResult>
   getSetScripTxsByScript(script: string, limit?: number): Promise<SetScriptTransaction[]>
   getBalance(address: string): Promise<number>
   getAssetDistribution(assetId: string, height?: number, limit?: number): Promise<Distribution>

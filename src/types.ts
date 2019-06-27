@@ -152,3 +152,10 @@ export interface IScriptInfo {
   complexity: number
   extraFee: number
 }
+
+export interface IScriptDecompileResult {
+  STDLIB_VERSION: number
+  SCRIPT_TYPE: string
+  CONTENT_TYPE: string
+  script: string
+}
