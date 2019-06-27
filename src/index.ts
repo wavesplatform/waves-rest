@@ -17,7 +17,8 @@ import {
   GetAssetsBalanceResponse,
   Distribution,
   AssetInfo,
-  CandlesResponse
+  CandlesResponse,
+  IScriptInfo
 } from './types'
 
 export {
@@ -118,12 +119,10 @@ export type ApiIterable<T> = AsyncIterable<T[]> & { first: () => Promise<T[]>; a
 
 export const wavesApi = (config: IApiConfig, h: IHttp): IWavesApi => {
   const http = {
-    get: <T>(url: string): Promise<T> => {
-      return h.get(url)
-    },
-    post: <T>(url: string, data: any): Promise<T> => {
-      return h.post(url, data)
-    },
+    get: <T>(url: string): Promise<T> =>
+      h.get(url),
+    post: <T>(url: string, data: any): Promise<T> =>
+      h.post(url, data),
   }
 
   const httpCall = <T>(base: string, endpoint: string, data?: any) =>
@@ -268,6 +267,9 @@ export const wavesApi = (config: IApiConfig, h: IHttp): IWavesApi => {
     return marketdata.get<CandlesResponse[]>(`candles/WAVES/${map[to]}/1440/1`).then(x => parseFloat(x[0].close))
   }
 
+  const getScriptInfo = (address: string): Promise<IScriptInfo> =>
+    node.get<IScriptInfo>(`addresses/scriptInfo/${address}`)
+
   return Object.freeze({
     waitForHeight,
     getHeight,
@@ -282,6 +284,7 @@ export const wavesApi = (config: IApiConfig, h: IHttp): IWavesApi => {
     getKeyValuePairs,
     getValueByKey,
     getTransfersTxs,
+    getScriptInfo,
     getIssueTxs,
     getBalance,
     getAssetsBalance,
@@ -327,6 +330,7 @@ export interface IWavesApi {
   getTransfersTxs(params: GetTransferTxsParams, options?: PagingOptions): ApiIterable<TransferTransaction>
   geTxsByAddress(address: string, limit?: number): Promise<TxWithIdAndSender[]>
   getUtx(): Promise<TxWithIdAndSender[]>
+  getScriptInfo(address: string): Promise<IScriptInfo>
   getSetScripTxsByScript(script: string, limit?: number): Promise<SetScriptTransaction[]>
   getBalance(address: string): Promise<number>
   getAssetDistribution(assetId: string, height?: number, limit?: number): Promise<Distribution>
@@ -338,3 +342,4 @@ export interface IWavesApi {
   getWavesExchangeRate(to: 'btc' | 'usd'): Promise<number>
   config: IApiConfig
 }
+

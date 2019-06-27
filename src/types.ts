@@ -144,3 +144,11 @@ export interface GetAssetsBalanceResponse {
   address: string
   balances: AssetBalance[]
 }
+
+export interface IScriptInfo {
+  address: string
+  script: string
+  scriptText: string
+  complexity: number
+  extraFee: number
+}
