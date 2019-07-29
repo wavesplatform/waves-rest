@@ -19,7 +19,8 @@ import {
   AssetInfo,
   CandlesResponse,
   IScriptInfo,
-  IScriptDecompileResult
+  IScriptDecompileResult,
+  GetNftBalanceResponse
 } from './types'
 
 export {
@@ -223,6 +224,8 @@ export const wavesApi = (config: IApiConfig, h: IHttp): IWavesApi => {
 
   const getAssetsBalance = (address: string): Promise<GetAssetsBalanceResponse> => node.get(`assets/balance/${address}`)
 
+  const getNftBalance = (address: string): Promise<GetNftBalanceResponse> => node.get(`assets/nft/${address}/limit/10000`)
+
   const getSetScripTxsByScript = (script: string, limit: number = 100): Promise<SetScriptTransaction[]> =>
     api
       .post<{ data: { data: SetScriptTransaction }[] }>('transactions/set-script', {
@@ -290,6 +293,7 @@ export const wavesApi = (config: IApiConfig, h: IHttp): IWavesApi => {
     decompileScript,
     getIssueTxs,
     getBalance,
+    getNftBalance,
     getAssetsBalance,
     getAssetInfo,
     getUtx,
@@ -337,6 +341,7 @@ export interface IWavesApi {
   decompileScript(scriptBinary: string): Promise<IScriptDecompileResult>
   getSetScripTxsByScript(script: string, limit?: number): Promise<SetScriptTransaction[]>
   getBalance(address: string): Promise<number>
+  getNftBalance(address: string): Promise<GetNftBalanceResponse>
   getAssetDistribution(assetId: string, height?: number, limit?: number): Promise<Distribution>
   getAssetsBalance(address: string): Promise<GetAssetsBalanceResponse>
   getAssetInfo(assetId: string): Promise<AssetInfo>

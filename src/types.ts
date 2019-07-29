@@ -145,6 +145,26 @@ export interface GetAssetsBalanceResponse {
   balances: AssetBalance[]
 }
 
+export type GetNftBalanceResponse = {
+  senderPublicKey: string
+  quantity: number
+  fee: number
+  description: string
+  type: number
+  version: number
+  reissuable: boolean
+  script: string
+  sender: string
+  feeAssetId: string
+  chainId: number
+  proofs: string[]
+  assetId: string
+  decimals: number
+  name: string
+  id: string
+  timestamp: number
+}[]
+
 export interface IScriptInfo {
   address: string
   script: string
