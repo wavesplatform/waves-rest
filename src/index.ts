@@ -72,7 +72,6 @@ const wrapError = (error: any) => {
         }
         break
       case 306: //error while executing
-        console.log(error.response.data)
         er = {
           code: 306,
           message: error.response.data.message,
@@ -89,7 +88,6 @@ const wrapError = (error: any) => {
           message: error.response.data.message,
           tx: error.response.data.transaction,
           trace: error.response.data.trace,
-          vars: error.response.data.vars.reduce((a: [], b: []) => [...a, ...b], []),
         }
         if (error.response.data.vars) {
           (<any>er).vars = error.response.data.vars.reduce((a: [], b: []) => [...a, ...b], [])
