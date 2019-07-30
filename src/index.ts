@@ -125,6 +125,8 @@ export const wavesApi = (config: IApiConfig, h: IHttp): IWavesApi => {
       h.post(url, data),
   }
 
+  const defaultLimit = config.chainId === 'W' ? 1000 : 10000
+
   const httpCall = <T>(base: string, endpoint: string, data?: any) =>
     retry(() => (data ? http.post<T>(base + endpoint, data) : http.get<T>(base + endpoint)), 5, 1000)
 
@@ -224,7 +226,7 @@ export const wavesApi = (config: IApiConfig, h: IHttp): IWavesApi => {
 
   const getAssetsBalance = (address: string): Promise<GetAssetsBalanceResponse> => node.get(`assets/balance/${address}`)
 
-  const getNftBalance = (address: string): Promise<GetNftBalanceResponse> => node.get(`assets/nft/${address}/limit/10000`)
+  const getNftBalance = (address: string, limit: number = defaultLimit): Promise<GetNftBalanceResponse> => node.get(`assets/nft/${address}/limit/${limit}`)
 
   const getSetScripTxsByScript = (script: string, limit: number = 100): Promise<SetScriptTransaction[]> =>
     api
