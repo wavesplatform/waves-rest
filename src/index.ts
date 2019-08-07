@@ -20,7 +20,8 @@ import {
   CandlesResponse,
   IScriptInfo,
   IScriptDecompileResult,
-  GetNftBalanceResponse
+  GetNftBalanceResponse,
+  GetMarketsResponse
 } from './types'
 
 export {
@@ -271,6 +272,9 @@ export const wavesApi = (config: IApiConfig, h: IHttp): IWavesApi => {
     return marketdata.get<CandlesResponse[]>(`candles/WAVES/${map[to]}/1440/1`).then(x => parseFloat(x[0].close))
   }
 
+  const getMarkets = () =>
+    matcher.get<GetMarketsResponse>('orderbook')
+
   const getScriptInfo = (address: string): Promise<IScriptInfo> =>
     node.get<IScriptInfo>(`addresses/scriptInfo/${address}`)
 
@@ -305,6 +309,7 @@ export const wavesApi = (config: IApiConfig, h: IHttp): IWavesApi => {
     placeOrder,
     cancelOrder,
     getWavesExchangeRate,
+    getMarkets,
     config,
   })
 }
@@ -323,7 +328,6 @@ export interface KeyValuePair {
 }
 
 export interface IWavesApi {
-  //getAssetInfo(assetId: string): Promise<IAssetInfo>
   waitForHeight(height: number): Promise<number>
   getHeight(): Promise<number>
   getTxById(txId: string): Promise<TxWithIdAndSender>
@@ -351,6 +355,7 @@ export interface IWavesApi {
   placeOrder(order: IOrder): Promise<Order>
   cancelOrder(amountAsset: string, priceAsset: string, cancelOrder: ICancelOrder): Promise<void>
   getWavesExchangeRate(to: 'btc' | 'usd'): Promise<number>
+  getMarkets(): Promise<GetMarketsResponse>
   config: IApiConfig
 }
 

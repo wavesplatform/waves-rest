@@ -179,3 +179,33 @@ export interface IScriptDecompileResult {
   CONTENT_TYPE: string
   script: string
 }
+
+export interface GetMarketsResponse {
+  matcherPublicKey: string
+  markets:          Market[]
+}
+
+export interface Market {
+  amountAssetName: string
+  amountAsset:     string
+  priceAsset:      string
+  created:         number
+  amountAssetInfo: {decimals: number} | null
+  restrictions:    Restrictions
+  priceAssetInfo:  {decimals: number} | null
+  matchingRules:   MatchingRules
+  priceAssetName:  string
+}
+
+export interface MatchingRules {
+  tickSize: string
+}
+
+export interface Restrictions {
+  stepAmount: string
+  minAmount:  string
+  maxAmount:  string
+  stepPrice:  string
+  minPrice:   string
+  maxPrice:   string
+}

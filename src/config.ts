@@ -23,3 +23,4 @@ export const config: { [K in 'testnet' | 'mainnet']: IApiConfig } = {
     chainId: 'W',
   },
 }
+
