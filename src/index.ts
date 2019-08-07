@@ -257,7 +257,7 @@ export const wavesApi = (config: IApiConfig, h: IHttp): IWavesApi => {
     matcher.post<void>(`orderbook/${amountAsset}/${priceAsset}/cancel`, cancelOrder)
 
   const getKeyValuePairs = (address: string): Promise<KeyValuePair[]> =>
-    node.get<KeyValuePair[]>(`addresses/data/${address}`)
+    node.get<KeyValuePair[]>(`addresses/data/${address}`).then(x => x.map(({ type, value, key }) => ({ type, key, value: value.toString() })))
 
   const getValueByKey = (address: string, key: string): Promise<KeyValuePair> =>
     node.get<KeyValuePair>(`addresses/data/${address}/${key}`)
