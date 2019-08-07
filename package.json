@@ -1,6 +1,6 @@
 {
   "name": "@waves/waves-rest",
-  "version": "0.0.29",
+  "version": "0.0.30",
   "description": "Waves rest apis bundled together",
   "keywords": [
     "waves",
@@ -12,7 +12,7 @@
   "types": "dist/index.d.ts",
   "scripts": {
     "build": "rm -fr dist && tsc && cp README.md ./dist && cp package.json ./dist",
-    "prepublishOnly": "npm run build && cd ./dist && npm version patch && cp package.json ../",
+    "deploy": "npm run build && cd ./dist && npm version patch && cp package.json ../ && npm publish",
     "lint": "tslint --fix -c tslint.json '{src,test,usage}/**/*{.ts,.tsx}'",
     "test": "jest"
   },
