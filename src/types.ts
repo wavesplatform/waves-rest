@@ -145,6 +145,14 @@ export interface GetAssetsBalanceResponse {
   balances: AssetBalance[]
 }
 
+export interface GetBalanceDetailsResponse {
+  address: string
+  regular: number
+  generating: number
+  available: number
+  effective: number
+}
+
 export type GetNftBalanceResponse = {
   senderPublicKey: string
   quantity: number
@@ -182,19 +190,19 @@ export interface IScriptDecompileResult {
 
 export interface GetMarketsResponse {
   matcherPublicKey: string
-  markets:          Market[]
+  markets: Market[]
 }
 
 export interface Market {
   amountAssetName: string
-  amountAsset:     string
-  priceAsset:      string
-  created:         number
-  amountAssetInfo: {decimals: number} | null
-  restrictions:    Restrictions
-  priceAssetInfo:  {decimals: number} | null
-  matchingRules:   MatchingRules
-  priceAssetName:  string
+  amountAsset: string
+  priceAsset: string
+  created: number
+  amountAssetInfo: { decimals: number } | null
+  restrictions: Restrictions
+  priceAssetInfo: { decimals: number } | null
+  matchingRules: MatchingRules
+  priceAssetName: string
 }
 
 export interface MatchingRules {
@@ -203,9 +211,9 @@ export interface MatchingRules {
 
 export interface Restrictions {
   stepAmount: string
-  minAmount:  string
-  maxAmount:  string
-  stepPrice:  string
-  minPrice:   string
-  maxPrice:   string
+  minAmount: string
+  maxAmount: string
+  stepPrice: string
+  minPrice: string
+  maxPrice: string
 }

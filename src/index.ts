@@ -21,7 +21,8 @@ import {
   IScriptInfo,
   IScriptDecompileResult,
   GetNftBalanceResponse,
-  GetMarketsResponse
+  GetMarketsResponse,
+  GetBalanceDetailsResponse
 } from './types'
 
 export {
@@ -48,6 +49,7 @@ export {
 import { TTx, IOrder, ICancelOrder } from '@waves/waves-transactions'
 import { IApiConfig } from './config'
 import { IHttp } from './http-bindings'
+import { address } from '@waves/waves-crypto'
 export { IHttp, axiosHttp, apolloHttp } from './http-bindings'
 export { IApiConfig, config } from './config'
 
@@ -225,6 +227,9 @@ export const wavesApi = (config: IApiConfig, h: IHttp): IWavesApi => {
   const getBalance = (address: string): Promise<number> =>
     node.get<{ available: number }>(`addresses/balance/details/${address}`).then(x => x.available)
 
+  const getBalanceDetails = (address: string): Promise<GetBalanceDetailsResponse> =>
+    node.get(`addresses/balance/details/${address}`)
+
   const getAssetsBalance = (address: string): Promise<GetAssetsBalanceResponse> => node.get(`assets/balance/${address}`)
 
   const getNftBalance = (address: string, limit: number = defaultLimit): Promise<GetNftBalanceResponse> => node.get(`assets/nft/${address}/limit/${limit}`)
@@ -299,6 +304,7 @@ export const wavesApi = (config: IApiConfig, h: IHttp): IWavesApi => {
     decompileScript,
     getIssueTxs,
     getBalance,
+    getBalanceDetails,
     getNftBalance,
     getAssetsBalance,
     getAssetInfo,
@@ -347,6 +353,7 @@ export interface IWavesApi {
   decompileScript(scriptBinary: string): Promise<IScriptDecompileResult>
   getSetScripTxsByScript(script: string, limit?: number): Promise<SetScriptTransaction[]>
   getBalance(address: string): Promise<number>
+  getBalanceDetails(address: string): Promise<GetBalanceDetailsResponse>
   getNftBalance(address: string): Promise<GetNftBalanceResponse>
   getAssetDistribution(assetId: string, height?: number, limit?: number): Promise<Distribution>
   getAssetsBalance(address: string): Promise<GetAssetsBalanceResponse>
