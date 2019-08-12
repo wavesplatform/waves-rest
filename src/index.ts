@@ -7,11 +7,11 @@ import {
   GetTransferTxsParams,
   TransferTransaction,
   GetIssueTxsParams,
+  GetInvokeScriptTxsParams,
   IssueTransaction,
   TxWithIdAndSender,
   SetScriptTransaction,
   Order,
-  defaultLimit,
   defaultSort,
   OrderbookPair,
   GetAssetsBalanceResponse,
@@ -22,7 +22,12 @@ import {
   IScriptDecompileResult,
   GetNftBalanceResponse,
   GetMarketsResponse,
-  GetBalanceDetailsResponse
+  GetBalanceDetailsResponse,
+  InvokeScriptTransaction,
+  GetSetScriptTxsParams,
+  KeyValuePair,
+  PagingOptions,
+  StateChanges
 } from './types'
 
 export {
@@ -50,6 +55,7 @@ import { TTx, IOrder, ICancelOrder } from '@waves/waves-transactions'
 import { IApiConfig } from './config'
 import { IHttp } from './http-bindings'
 import { address } from '@waves/waves-crypto'
+import { stateChanges } from '@waves/waves-transactions/dist/nodeInteraction'
 export { IHttp, axiosHttp, apolloHttp } from './http-bindings'
 export { IApiConfig, config } from './config'
 
@@ -197,6 +203,10 @@ export const wavesApi = (config: IApiConfig, h: IHttp): IWavesApi => {
 
   const getIssueTxs = buildEndpoint<GetIssueTxsParams, IssueTransaction>('transactions/issue?')
 
+  const getInvokeScriptTxs = buildEndpoint<GetInvokeScriptTxsParams, InvokeScriptTransaction>('transactions/invoke-script?')
+
+  const getSetScriptTxs = buildEndpoint<GetSetScriptTxsParams, SetScriptTransaction>('transactions/set-script?')
+
   const getHeight = async () => node.get<{ height: number }>('blocks/last').then(x => x.height)
 
   const getTxById = async (txId: string): Promise<TxWithIdAndSender> =>
@@ -210,17 +220,20 @@ export const wavesApi = (config: IApiConfig, h: IHttp): IWavesApi => {
 
   const waitForTx = async (txId: string): Promise<TxWithIdAndSender> => retry(async () => getTxById(txId), 999, 1000)
 
-  const geTxsByAddress = async (address: string, limit: number = 100): Promise<TxWithIdAndSender[]> =>
-    (await node.get<TxWithIdAndSender[][]>(`transactions/address/${address}/limit/${limit}`))[0]
+  const getTxsByAddress = async (address: string, limit: number = 100): Promise<TxWithIdAndSender[]> =>
+    node.get<TxWithIdAndSender[][]>(`transactions/address/${address}/limit/${limit}`).then(x => x[0])
 
   const broadcastAndWait = async (tx: TxWithIdAndSender): Promise<TxWithIdAndSender> =>
-    await broadcast(tx).then(x => waitForTx(x.id))
+    broadcast(tx).then(x => waitForTx(x.id))
 
   const getAssetDistribution = async (assetId: string, height?: number, limit: number = 999): Promise<Distribution> =>
-    await node.get<Distribution>(`assets/${assetId}/distribution/${height || await getHeight() - 1}/limit/${limit}`)
+    node.get<Distribution>(`assets/${assetId}/distribution/${height || await getHeight() - 1}/limit/${limit}`)
 
   const getAssetInfo = async (assetId: string): Promise<AssetInfo> =>
-    await node.get<AssetInfo>(`assets/details/${assetId}`)
+    node.get<AssetInfo>(`assets/details/${assetId}`)
+
+  const stateChanges = async (txId: string): Promise<StateChanges> =>
+    node.get<StateChanges>(`debug/stateChanges/info/${txId}`)
 
   const getUtx = (): Promise<TxWithIdAndSender[]> => node.get<TxWithIdAndSender[]>('transactions/unconfirmed')
 
@@ -234,13 +247,6 @@ export const wavesApi = (config: IApiConfig, h: IHttp): IWavesApi => {
 
   const getNftBalance = (address: string, limit: number = defaultLimit): Promise<GetNftBalanceResponse> => node.get(`assets/nft/${address}/limit/${limit}`)
 
-  const getSetScripTxsByScript = (script: string, limit: number = 100): Promise<SetScriptTransaction[]> =>
-    api
-      .post<{ data: { data: SetScriptTransaction }[] }>('transactions/set-script', {
-        script: 'base64:' + script,
-        limit,
-      })
-      .then(x => x.data.map(y => y.data))
 
   const waitForHeight = (height: number): Promise<number> =>
     retry(
@@ -287,82 +293,117 @@ export const wavesApi = (config: IApiConfig, h: IHttp): IWavesApi => {
     node.post<IScriptDecompileResult>('utils/script/decompile', scriptBinary)
 
   return Object.freeze({
-    waitForHeight,
+
+    //height
     getHeight,
+    waitForHeight,
+
+    //txs
     getTxById,
-    getUtxById,
-    broadcast,
     waitForTx,
-    getDataTxs,
-    geTxsByAddress,
-    broadcastAndWait,
+    getUtx,
+    getUtxById,
+    getTxsByAddress,
+
+    //txs filters
+    getTransfersTxs,
+    getIssueTxs,
     getMassTransfersTxs,
+    getDataTxs,
+    getInvokeScriptTxs,
+    getSetScriptTxs,
+
+    //data
     getKeyValuePairs,
     getValueByKey,
-    getTransfersTxs,
-    getScriptInfo,
-    decompileScript,
-    getIssueTxs,
+
+    //balance
     getBalance,
     getBalanceDetails,
-    getNftBalance,
+
+    //assets
+    getAssetDistribution,
     getAssetsBalance,
     getAssetInfo,
-    getUtx,
-    getSetScripTxsByScript,
-    getOrderbookPair,
-    getAssetDistribution,
+    getNftBalance,
+
+    //scripts
+    getScriptInfo,
+    decompileScript,
+    stateChanges,
+
+
+    //matcher
     placeOrder,
     cancelOrder,
+    getOrderbookPair,
     getWavesExchangeRate,
     getMarkets,
+
+    //broadcast
+    broadcast,
+    broadcastAndWait,
+
     config,
   })
 }
 
 //return await this.node.get<IAssetInfo>(`assets/details/${assetId}`)
 
-export interface PagingOptions {
-  initialCursor?: string
-  pageLimit?: number
-}
 
-export interface KeyValuePair {
-  type: string
-  value: string
-  key: string
-}
+
 
 export interface IWavesApi {
-  waitForHeight(height: number): Promise<number>
+
+  //height
   getHeight(): Promise<number>
+  waitForHeight(height: number): Promise<number>
+
+  //txs
   getTxById(txId: string): Promise<TxWithIdAndSender>
-  getUtxById(txId: string): Promise<TxWithIdAndSender>
-  broadcast(tx: TTx): Promise<TxWithIdAndSender>
-  broadcastAndWait(tx: TTx): Promise<TxWithIdAndSender>
   waitForTx(txId: string): Promise<TxWithIdAndSender>
+  getUtx(): Promise<TxWithIdAndSender[]>
+  getUtxById(txId: string): Promise<TxWithIdAndSender>
+  getTxsByAddress(address: string, limit?: number): Promise<TxWithIdAndSender[]>
+
+  //txs filters
+  getTransfersTxs(params: GetTransferTxsParams, options?: PagingOptions): ApiIterable<TransferTransaction>
+  getIssueTxs(params: GetIssueTxsParams, options?: PagingOptions): ApiIterable<IssueTransaction>
+  getMassTransfersTxs(params: GetMassTransferTxsParams, options?: PagingOptions): ApiIterable<MassTransferTransaction>
   getDataTxs(params: GetDataTxsParams, options?: PagingOptions): ApiIterable<DataTransaction>
+  getInvokeScriptTxs(params: GetInvokeScriptTxsParams, options?: PagingOptions): ApiIterable<InvokeScriptTransaction>
+  getSetScriptTxs(params: GetSetScriptTxsParams, options?: PagingOptions): ApiIterable<SetScriptTransaction>
+
+  //data
   getKeyValuePairs(address: string): Promise<KeyValuePair[]>
   getValueByKey(address: string, key: string): Promise<KeyValuePair>
-  getMassTransfersTxs(params: GetMassTransferTxsParams, options?: PagingOptions): ApiIterable<MassTransferTransaction>
-  getIssueTxs(params: GetIssueTxsParams, options?: PagingOptions): ApiIterable<IssueTransaction>
-  getTransfersTxs(params: GetTransferTxsParams, options?: PagingOptions): ApiIterable<TransferTransaction>
-  geTxsByAddress(address: string, limit?: number): Promise<TxWithIdAndSender[]>
-  getUtx(): Promise<TxWithIdAndSender[]>
-  getScriptInfo(address: string): Promise<IScriptInfo>
-  decompileScript(scriptBinary: string): Promise<IScriptDecompileResult>
-  getSetScripTxsByScript(script: string, limit?: number): Promise<SetScriptTransaction[]>
+
+  //balance
   getBalance(address: string): Promise<number>
   getBalanceDetails(address: string): Promise<GetBalanceDetailsResponse>
-  getNftBalance(address: string): Promise<GetNftBalanceResponse>
+
+  //assets
   getAssetDistribution(assetId: string, height?: number, limit?: number): Promise<Distribution>
   getAssetsBalance(address: string): Promise<GetAssetsBalanceResponse>
   getAssetInfo(assetId: string): Promise<AssetInfo>
-  getOrderbookPair(amountAsset: string, priceAsset: string): Promise<OrderbookPair>
+  getNftBalance(address: string): Promise<GetNftBalanceResponse>
+
+  //scripts
+  getScriptInfo(address: string): Promise<IScriptInfo>
+  decompileScript(scriptBinary: string): Promise<IScriptDecompileResult>
+  stateChanges(txId: string): Promise<StateChanges>
+
+  //matcher
   placeOrder(order: IOrder): Promise<Order>
   cancelOrder(amountAsset: string, priceAsset: string, cancelOrder: ICancelOrder): Promise<void>
+  getOrderbookPair(amountAsset: string, priceAsset: string): Promise<OrderbookPair>
   getWavesExchangeRate(to: 'btc' | 'usd'): Promise<number>
   getMarkets(): Promise<GetMarketsResponse>
+
+  //broadcast
+  broadcast(tx: TTx): Promise<TxWithIdAndSender>
+  broadcastAndWait(tx: TTx): Promise<TxWithIdAndSender>
+
   config: IApiConfig
 }
 

@@ -8,7 +8,8 @@ import {
   ITransferTransaction,
   IDataTransaction,
   ISetScriptTransaction,
-  IIssueTransaction
+  IIssueTransaction,
+  IInvokeScriptTransaction
 } from '@waves/waves-transactions'
 
 export type LONG = string | number
@@ -31,6 +32,7 @@ export type TransferTransaction = ITransferTransaction & TypeExtension
 export type DataTransaction = IDataTransaction & TypeExtension
 export type SetScriptTransaction = ISetScriptTransaction & TypeExtension
 export type IssueTransaction = IIssueTransaction & TypeExtension
+export type InvokeScriptTransaction = IInvokeScriptTransaction & TypeExtension
 export type Order = IOrder & TypeExtension
 
 export interface BaseParams {
@@ -53,6 +55,15 @@ export interface GetTransferTxsParams extends BaseParams {
 
 export interface GetIssueTxsParams extends BaseParams {
   assetId?: string
+  script?: string
+}
+
+export interface GetInvokeScriptTxsParams extends BaseParams {
+  dapp?: string
+  function?: string
+}
+
+export interface GetSetScriptTxsParams extends BaseParams {
   script?: string
 }
 
@@ -181,6 +192,58 @@ export interface IScriptInfo {
   extraFee: number
 }
 
+export interface StateChanges {
+  senderPublicKey: string
+  fee: number
+  type: number
+  version: number
+  stateChanges: {
+    data: KeyValuePair[]
+    transfers: Transfer[]
+  }
+  call: Call
+  dApp: string
+  sender: string
+  feeAssetId: string | null
+  proofs: string[]
+  payment: Payment[]
+  id: string
+  timestamp: number
+  height: number
+}
+
+export interface Call {
+  function: string
+  args: Arg[]
+}
+
+export interface Arg {
+  type: string
+  value: number
+}
+
+export interface Payment {
+  amount: number
+  assetId: string | null
+}
+
+export interface PagingOptions {
+  initialCursor?: string
+  pageLimit?: number
+}
+
+export interface KeyValuePair {
+  type: string
+  value: string
+  key: string
+}
+
+export interface Transfer {
+  address: string
+  asset: string | null
+  amount: number
+}
+
 export interface IScriptDecompileResult {
   STDLIB_VERSION: number
   SCRIPT_TYPE: string
@@ -217,3 +280,6 @@ export interface Restrictions {
   minPrice: string
   maxPrice: string
 }
+
+
+
