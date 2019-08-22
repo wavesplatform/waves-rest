@@ -17,7 +17,7 @@ import {
   GetAssetsBalanceResponse,
   Distribution,
   AssetInfo,
-  CandlesResponse,
+  PairsResponse,
   IScriptInfo,
   IScriptDecompileResult,
   GetNftBalanceResponse,
@@ -55,12 +55,8 @@ import { TTx, IOrder, ICancelOrder } from '@waves/waves-transactions'
 import { IApiConfig } from './config'
 import { IHttp } from './http-bindings'
 import { address } from '@waves/waves-crypto'
-import { stateChanges } from '@waves/waves-transactions/dist/nodeInteraction'
 export { IHttp, axiosHttp, apolloHttp } from './http-bindings'
 export { IApiConfig, config } from './config'
-
-
-
 
 export const delay = (millis: number): Promise<{}> => new Promise((resolve, _) => setTimeout(resolve, millis))
 
@@ -124,7 +120,7 @@ export const retry = async <T>(action: () => Promise<T>, limit: number, delayAft
   return await retry(action, limit - 1, delayAfterFail)
 }
 
-export type ApiIterable<T> = AsyncIterable<T[]> & { first: () => Promise<T[]>; all: () => Promise<T[]> }
+export type ApiIterable<T> = AsyncIterable<{ lastCursor: string, items: T[] }> & { first: () => Promise<{ lastCursor: string, items: T[] }>; take: (count: number) => AsyncIterableIterator<{ lastCursor: string, items: T[] }>, all: () => Promise<T[]> }
 
 export const wavesApi = (config: IApiConfig, h: IHttp): IWavesApi => {
   const http = {
@@ -144,7 +140,6 @@ export const wavesApi = (config: IApiConfig, h: IHttp): IWavesApi => {
     post: <T>(endpoint: string, data: any): Promise<T> => httpCall(base, endpoint, data),
   })
 
-  const marketdata = build('https://marketdata.wavesplatform.com/api/')
   const node = build(config.nodes)
   const api = build(config.api)
   const matcher = build(config.matcher)
@@ -156,36 +151,46 @@ export const wavesApi = (config: IApiConfig, h: IHttp): IWavesApi => {
       .join('&')
 
   const asyncIterator = <T extends { lastCursor: string }>(fetch: (lastCursor?: string) => Promise<T>) => <R>(
-    map: (value: T) => R[]
+    map: (value: T) => { lastCursor: string, items: R[] }
   ) => (options?: { initialCursor?: string; pageLimit?: number }): ApiIterable<R> => {
     let cursor = options && options.initialCursor
     let pageCount = 0
 
-    async function* asyncIterator() {
+    async function* createIterator() {
       do {
         const data = await fetch(cursor)
+
         yield map(data)
         cursor = data.lastCursor
         pageCount++
       } while (cursor && pageCount < ((options && options!.pageLimit) || Number.MAX_SAFE_INTEGER))
     }
 
-    const iterator = asyncIterator()
+    const iterator = createIterator()
 
-    return {
+    async function* take<T>(iterator: AsyncIterableIterator<T>, count: number) {
+      let take = 0
+      do {
+        const data = await iterator.next()
+        yield data.value
+        take++
+      } while (take < count)
+    }
+
+    const enchanceIterator = (iterator: AsyncIterableIterator<{ lastCursor: string, items: R[] }>) => ({
       ...iterator,
-      first: () =>
-        iterator[Symbol.asyncIterator]()
-          .next()
-          .then(x => x.value),
+      first: () => iterator.next().then(x => x.value),
+      take: (count: number) => enchanceIterator(take(iterator, count)),
       all: async () => {
         const all: R[][] = []
         for await (const i of iterator) {
-          all.push(i)
+          all.push(i.items)
         }
         return all.reduce((a, b) => [...a, ...b], [])
       },
-    }
+    })
+
+    return enchanceIterator(iterator)
   }
 
   type ApiListReponse<T> = { lastCursor: string; data: { data: T }[] }
@@ -193,7 +198,7 @@ export const wavesApi = (config: IApiConfig, h: IHttp): IWavesApi => {
   const buildEndpoint = <TParams extends BaseParams, T>(url: string) => (params: TParams, options?: PagingOptions) =>
     asyncIterator<ApiListReponse<T>>((lastCursor?: string) =>
       api.post<ApiListReponse<T>>(url, { ...params, after: lastCursor })
-    )(x => x.data.map(y => y.data))(options)
+    )(x => ({ lastCursor: x.lastCursor, items: x.data.map(y => y.data) }))(options)
 
   const getDataTxs = buildEndpoint<GetDataTxsParams, DataTransaction>('transactions/data?')
   const getMassTransfersTxs = buildEndpoint<GetMassTransferTxsParams, MassTransferTransaction>(
@@ -247,7 +252,6 @@ export const wavesApi = (config: IApiConfig, h: IHttp): IWavesApi => {
 
   const getNftBalance = (address: string, limit: number = defaultLimit): Promise<GetNftBalanceResponse> => node.get(`assets/nft/${address}/limit/${limit}`)
 
-
   const waitForHeight = (height: number): Promise<number> =>
     retry(
       async () => {
@@ -279,8 +283,13 @@ export const wavesApi = (config: IApiConfig, h: IHttp): IWavesApi => {
       btc: '8LQW8f7P5d5PZM7GtZEBgaqRPGSzS3DfPuiXrURJ4AJS',
       usd: 'Ft8X1v1LTa1ABafufpaCWyVj8KkaxUWE6xBhW6sNFJck',
     }
+    const matcherAddress = address({ public: config.matcherPublicKey }, config.chainId)
+    const amountAsset = 'WAVES'
+    const priceAsset = map[to]
 
-    return marketdata.get<CandlesResponse[]>(`candles/WAVES/${map[to]}/1440/1`).then(x => parseFloat(x[0].close))
+    return api.get<any>(`matcher/${matcherAddress}/pairs/${amountAsset}/${priceAsset}`)
+      .then(x => x.data as PairsResponse)
+      .then(x => x.lastPrice)
   }
 
   const getMarkets = () =>
@@ -347,11 +356,6 @@ export const wavesApi = (config: IApiConfig, h: IHttp): IWavesApi => {
     config,
   })
 }
-
-//return await this.node.get<IAssetInfo>(`assets/details/${assetId}`)
-
-
-
 
 export interface IWavesApi {
 

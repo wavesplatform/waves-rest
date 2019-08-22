@@ -139,16 +139,16 @@ export interface AssetInfo {
   minSponsoredAssetFee: number | null
 }
 
-export interface CandlesResponse {
-  timestamp: number
-  open: string
-  high: string
-  low: string
-  close: string
-  vwap: string
-  volume: string
-  priceVolume: string
-  confirmed: boolean
+export interface PairsResponse {
+  firstPrice: number
+  lastPrice: number
+  low: number
+  high: number
+  weightedAveragePrice: number
+  volume: number
+  quoteVolume: number
+  volumeWaves: number
+  txsCount: number
 }
 
 export interface GetAssetsBalanceResponse {
