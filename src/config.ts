@@ -22,7 +22,7 @@ export const config: { [K in 'testnet' | 'mainnet' | 'stage']: IApiConfig } = {
     matcherPublicKey: '7kPFrHDiGw1rCm7LPszuECwWYL3dMf6iMifLRDJQZMzy',
     chainId: 'W',
   },
-  
+
   stage: {
     nodes: 'https://nodes.wavesnodes.com/',
     api: 'https://api-stage.wavesplatform.com/v0/',
@@ -31,4 +31,3 @@ export const config: { [K in 'testnet' | 'mainnet' | 'stage']: IApiConfig } = {
     chainId: 'W',
   },
 }
-

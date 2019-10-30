@@ -54,9 +54,10 @@ export {
 import { TTx, IOrder, ICancelOrder } from '@waves/waves-transactions'
 import { IApiConfig } from './config'
 import { IHttp } from './http-bindings'
-import { address } from '@waves/waves-crypto'
+import { address } from '@waves/ts-lib-crypto'
 export { IHttp, axiosHttp, apolloHttp } from './http-bindings'
-export { IApiConfig, config } from './config'
+export * from './config'
+export * from './well-known-tokens'
 
 export const delay = (millis: number): Promise<{}> => new Promise((resolve, _) => setTimeout(resolve, millis))
 
@@ -283,7 +284,7 @@ export const wavesApi = (config: IApiConfig, h: IHttp): IWavesApi => {
       btc: '8LQW8f7P5d5PZM7GtZEBgaqRPGSzS3DfPuiXrURJ4AJS',
       usd: 'Ft8X1v1LTa1ABafufpaCWyVj8KkaxUWE6xBhW6sNFJck',
     }
-    const matcherAddress = address({ public: config.matcherPublicKey }, config.chainId)
+    const matcherAddress = address({ publicKey: config.matcherPublicKey }, config.chainId)
     const amountAsset = 'WAVES'
     const priceAsset = map[to]
 
