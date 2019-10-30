@@ -281,5 +281,10 @@ export interface Restrictions {
   maxPrice: string
 }
 
+export interface DepositInfo {
+  address: string
+  minAmount: number
+  maxAmount: number
+}
 
 

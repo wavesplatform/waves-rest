@@ -27,7 +27,8 @@ import {
   GetSetScriptTxsParams,
   KeyValuePair,
   PagingOptions,
-  StateChanges
+  StateChanges,
+  DepositInfo
 } from './types'
 
 export {
@@ -136,20 +137,25 @@ export const wavesApi = (config: IApiConfig, h: IHttp): IWavesApi => {
   const httpCall = <T>(base: string, endpoint: string, data?: any) =>
     retry(() => (data ? http.post<T>(base + endpoint, data) : http.get<T>(base + endpoint)), 5, 1000)
 
-  const build = (base: string) => ({
-    get: <T>(endpoint: string): Promise<T> => httpCall(base, endpoint),
-    post: <T>(endpoint: string, data: any): Promise<T> => httpCall(base, endpoint, data),
+  const noEnpoint = <T>(): Promise<T> => {
+    throw new Error(`Endpoint is not awailable in chain with ID: ${config.chainId}`)
+  }
+
+  const build = (base?: string) => ({
+    get: <T>(endpoint: string): Promise<T> => base ? httpCall(base, endpoint) : noEnpoint<T>(),
+    post: <T>(endpoint: string, data: any): Promise<T> => base ? httpCall(base, endpoint, data) : noEnpoint<T>(),
   })
 
   const node = build(config.nodes)
   const api = build(config.api)
   const matcher = build(config.matcher)
+  const gateways = build(config.gateways)
 
-  const p = (args: BaseParams) =>
-    Object.entries({ ...args, limit: args.limit || defaultLimit, sort: args.sort || defaultSort })
-      .map(x => (x[1] !== undefined ? `${x[0]}=${x[1]}` : undefined))
-      .filter(x => x !== undefined)
-      .join('&')
+  // const p = (args: BaseParams) =>
+  //   Object.entries({ ...args, limit: args.limit || defaultLimit, sort: args.sort || defaultSort })
+  //     .map(x => (x[1] !== undefined ? `${x[0]}=${x[1]}` : undefined))
+  //     .filter(x => x !== undefined)
+  //     .join('&')
 
   const asyncIterator = <T extends { lastCursor: string }>(fetch: (lastCursor?: string) => Promise<T>) => <R>(
     map: (value: T) => { lastCursor: string, items: R[] }
@@ -302,6 +308,9 @@ export const wavesApi = (config: IApiConfig, h: IHttp): IWavesApi => {
   const decompileScript = (scriptBinary: string) =>
     node.post<IScriptDecompileResult>('utils/script/decompile', scriptBinary)
 
+  const getDepositInfo = (userAddress: string, assetId: string) =>
+    gateways.post<DepositInfo>('external/deposit', { userAddress, assetId })
+
   return Object.freeze({
 
     //height
@@ -349,6 +358,9 @@ export const wavesApi = (config: IApiConfig, h: IHttp): IWavesApi => {
     getOrderbookPair,
     getWavesExchangeRate,
     getMarkets,
+
+    //gateways
+    getDepositInfo,
 
     //broadcast
     broadcast,
@@ -404,6 +416,9 @@ export interface IWavesApi {
   getOrderbookPair(amountAsset: string, priceAsset: string): Promise<OrderbookPair>
   getWavesExchangeRate(to: 'btc' | 'usd'): Promise<number>
   getMarkets(): Promise<GetMarketsResponse>
+
+  //gateways
+  getDepositInfo(userAddress: string, assetId: string): Promise<DepositInfo>
 
   //broadcast
   broadcast(tx: TTx): Promise<TxWithIdAndSender>
