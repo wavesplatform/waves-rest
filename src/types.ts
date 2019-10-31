@@ -156,6 +156,12 @@ export interface GetAssetsBalanceResponse {
   balances: AssetBalance[]
 }
 
+export interface GetAssetBalanceResponse {
+  address: string
+  assetId: string
+  balance: number
+}
+
 export interface GetBalanceDetailsResponse {
   address: string
   regular: number

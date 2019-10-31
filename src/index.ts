@@ -28,7 +28,8 @@ import {
   KeyValuePair,
   PagingOptions,
   StateChanges,
-  DepositInfo
+  DepositInfo,
+  GetAssetBalanceResponse
 } from './types'
 
 export {
@@ -257,6 +258,8 @@ export const wavesApi = (config: IApiConfig, h: IHttp): IWavesApi => {
 
   const getAssetsBalance = (address: string): Promise<GetAssetsBalanceResponse> => node.get(`assets/balance/${address}`)
 
+  const getAssetBalance = (address: string, assetId: string): Promise<GetAssetBalanceResponse> => node.get(`assets/balance/${address}/${assetId}`)
+
   const getNftBalance = (address: string, limit: number = defaultLimit): Promise<GetNftBalanceResponse> => node.get(`assets/nft/${address}/limit/${limit}`)
 
   const waitForHeight = (height: number): Promise<number> =>
@@ -343,6 +346,7 @@ export const wavesApi = (config: IApiConfig, h: IHttp): IWavesApi => {
     //assets
     getAssetDistribution,
     getAssetsBalance,
+    getAssetBalance,
     getAssetInfo,
     getNftBalance,
 
@@ -402,6 +406,7 @@ export interface IWavesApi {
   //assets
   getAssetDistribution(assetId: string, height?: number, limit?: number): Promise<Distribution>
   getAssetsBalance(address: string): Promise<GetAssetsBalanceResponse>
+  getAssetBalance(address: string, assetId: string): Promise<GetAssetBalanceResponse>
   getAssetInfo(assetId: string): Promise<AssetInfo>
   getNftBalance(address: string): Promise<GetNftBalanceResponse>
 
