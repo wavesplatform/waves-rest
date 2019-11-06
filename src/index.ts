@@ -135,8 +135,14 @@ export const wavesApi = (config: IApiConfig, h: IHttp): IWavesApi => {
 
   const defaultLimit = config.chainId === 'W' ? 1000 : 10000
 
+  const joinUrl = (a: string, b: string) => {
+    const aa = a.endsWith('/') ? a.slice(undefined, -1) : a
+    const bb = a.startsWith('/') ? b.slice(1) : b
+    return aa + '/' + bb
+  }
+
   const httpCall = <T>(base: string, endpoint: string, data?: any) =>
-    retry(() => (data ? http.post<T>(base + endpoint, data) : http.get<T>(base + endpoint)), 5, 1000)
+    retry(() => (data ? http.post<T>(joinUrl(base, endpoint), data) : http.get<T>(joinUrl(base, endpoint))), 5, 1000)
 
   const noEnpoint = <T>(): Promise<T> => {
     throw new Error(`Endpoint is not awailable in chain with ID: ${config.chainId}`)
