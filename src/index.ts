@@ -266,6 +266,25 @@ export const wavesApi = (config: IApiConfig, h: IHttp): IWavesApi => {
 
   const getAssetBalance = (address: string, assetId: string): Promise<GetAssetBalanceResponse> => node.get(`assets/balance/${address}/${assetId}`)
 
+  const waitForAssetBalance = (address: string, assetId: string, expectedBalance: number): Promise<number> =>
+    retry(async () => {
+      const { balance } = await getAssetBalance(address, assetId)
+      if (balance < expectedBalance) {
+        throw new Error('still waiting for balane')
+      }
+      return balance
+    }, 100, 1000)
+
+  const waitForBalance = (address: string, expectedBalance: number): Promise<number> =>
+    retry(async () => {
+      const balance = await getBalance(address)
+      if (balance < expectedBalance) {
+        throw new Error('still waiting for balane')
+      }
+      return balance
+    }, 100, 1000)
+
+
   const getNftBalance = (address: string, limit: number = defaultLimit): Promise<GetNftBalanceResponse> => node.get(`assets/nft/${address}/limit/${limit}`)
 
   const waitForHeight = (height: number): Promise<number> =>
@@ -348,6 +367,8 @@ export const wavesApi = (config: IApiConfig, h: IHttp): IWavesApi => {
     //balance
     getBalance,
     getBalanceDetails,
+    waitForAssetBalance,
+    waitForBalance,
 
     //assets
     getAssetDistribution,
@@ -408,6 +429,8 @@ export interface IWavesApi {
   //balance
   getBalance(address: string): Promise<number>
   getBalanceDetails(address: string): Promise<GetBalanceDetailsResponse>
+  waitForAssetBalance(address: string, assetId: string, amount: number): Promise<number>
+  waitForBalance(address: string, amount: number): Promise<number>
 
   //assets
   getAssetDistribution(assetId: string, height?: number, limit?: number): Promise<Distribution>
