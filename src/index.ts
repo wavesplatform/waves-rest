@@ -278,9 +278,10 @@ export const wavesApi = (config: IApiConfig, h: IHttp): IWavesApi => {
       }
       return balance
     }, 100, 1000)
-  
+
   const waitForAssetBalance = (address: string, assetId: string, expectedBalance: number): Promise<number> =>
-    isWavesAsset(assetId) ? waitForBalance(address, expectedBalance) :
+    isWavesAsset(assetId) ?
+      waitForBalance(address, expectedBalance) :
       retry(async () => {
         const { balance } = await getAssetBalance(address, assetId)
         if (balance < expectedBalance) {
@@ -292,15 +293,11 @@ export const wavesApi = (config: IApiConfig, h: IHttp): IWavesApi => {
   const getNftBalance = (address: string, limit: number = defaultLimit): Promise<GetNftBalanceResponse> => node.get(`assets/nft/${address}/limit/${limit}`)
 
   const waitForHeight = (height: number): Promise<number> =>
-    retry(
-      async () => {
-        const h = await getHeight()
-        if (h < height) throw 'Still waiting'
-        return h
-      },
-      999,
-      5000
-    )
+    retry(async () => {
+      const h = await getHeight()
+      if (h < height) throw 'Still waiting'
+      return h
+    }, 999, 5000)
 
   const getOrderbookPair = async (amountAsset: string, priceAsset: string): Promise<OrderbookPair> =>
     matcher.get<OrderbookPair>(`orderbook/${amountAsset}/${priceAsset}`)
