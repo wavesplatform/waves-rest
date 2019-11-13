@@ -63,6 +63,10 @@ export * from './well-known-tokens'
 
 export const delay = (millis: number): Promise<{}> => new Promise((resolve, _) => setTimeout(resolve, millis))
 
+export const WAVES_ASSET_ID = 'WAVES'
+
+const isWavesAsset = (assetId: string) => !assetId || assetId === WAVES_ASSET_ID
+
 const wrapError = (error: any) => {
   let er
   if (error && error.response && error.response.data) {
@@ -266,15 +270,6 @@ export const wavesApi = (config: IApiConfig, h: IHttp): IWavesApi => {
 
   const getAssetBalance = (address: string, assetId: string): Promise<GetAssetBalanceResponse> => node.get(`assets/balance/${address}/${assetId}`)
 
-  const waitForAssetBalance = (address: string, assetId: string, expectedBalance: number): Promise<number> =>
-    retry(async () => {
-      const { balance } = await getAssetBalance(address, assetId)
-      if (balance < expectedBalance) {
-        throw new Error('still waiting for balane')
-      }
-      return balance
-    }, 100, 1000)
-
   const waitForBalance = (address: string, expectedBalance: number): Promise<number> =>
     retry(async () => {
       const balance = await getBalance(address)
@@ -283,7 +278,16 @@ export const wavesApi = (config: IApiConfig, h: IHttp): IWavesApi => {
       }
       return balance
     }, 100, 1000)
-
+  
+  const waitForAssetBalance = (address: string, assetId: string, expectedBalance: number): Promise<number> =>
+    isWavesAsset(assetId) ? waitForBalance(address, expectedBalance) :
+      retry(async () => {
+        const { balance } = await getAssetBalance(address, assetId)
+        if (balance < expectedBalance) {
+          throw new Error('still waiting for balane')
+        }
+        return balance
+      }, 100, 1000)
 
   const getNftBalance = (address: string, limit: number = defaultLimit): Promise<GetNftBalanceResponse> => node.get(`assets/nft/${address}/limit/${limit}`)
 
