@@ -21,7 +21,7 @@ export const config: { [K in 'testnet' | 'mainnet' | 'stage']: IApiConfig } = {
     api: 'https://api.wavesplatform.com/v0/',
     matcher: 'https://matcher.waves.exchange/matcher/',
     gateways: 'https://gw.wavesplatform.com/api/v1/',
-    matcherPublicKey: '7kPFrHDiGw1rCm7LPszuECwWYL3dMf6iMifLRDJQZMzy',
+    matcherPublicKey: '9cpfKN9suPNvfeUNphzxXMjcnn974eme8ZhWUjaktzU5',
     chainId: 'W',
   },
 
