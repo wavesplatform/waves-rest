@@ -3,7 +3,7 @@ import axios from 'axios'
 import { config } from '../src/config'
 import { axiosHttp } from '../src/http-bindings'
 
-const { getMarkets } = wavesApi(config.testnet, axiosHttp(axios))
+const { getMarkets } = wavesApi(config.mainnet, axiosHttp(axios))
 
 const main = async () => {
   try {
