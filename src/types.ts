@@ -4,12 +4,16 @@ import {
   WithSender,
   IOrder,
   ICancelOrder,
+  IAliasTransaction,
+  ICancelLeaseTransaction,
+  IExchangeTransaction,
+  IBurnTransaction,
   IMassTransferTransaction,
   ITransferTransaction,
   IDataTransaction,
   ISetScriptTransaction,
   IIssueTransaction,
-  IInvokeScriptTransaction
+  IInvokeScriptTransaction,
 } from '@waves/waves-transactions'
 
 export type LONG = string | number
@@ -21,19 +25,54 @@ export const defaultLimit = 100
 
 export type DataType = 'binary' | 'integer' | 'boolean' | 'string'
 
-export type TxWithIdAndSender = TTx & WithId & WithSender
+export type TxWithIdAndSender = TTx & WithIdAndSender
 
-interface TypeExtension extends WithId, WithSender {
+export interface WithIdAndSender extends WithId, WithSender {
   sender: string
 }
 
-export type MassTransferTransaction = IMassTransferTransaction & TypeExtension
-export type TransferTransaction = ITransferTransaction & TypeExtension
-export type DataTransaction = IDataTransaction & TypeExtension
-export type SetScriptTransaction = ISetScriptTransaction & TypeExtension
-export type IssueTransaction = IIssueTransaction & TypeExtension
-export type InvokeScriptTransaction = IInvokeScriptTransaction & TypeExtension
-export type Order = IOrder & TypeExtension
+export type FieldToString<T, K extends keyof T> = Omit<T, K> & { [P in K]: string }
+
+export namespace BlockTxs {
+  export type AliasTransaction = FieldToString<IAliasTransaction, 'timestamp'> & WithIdAndSender
+}
+
+export interface NxtConsensus {
+  'nxt-consensus': {
+    'base-target': number
+    'generation-signature': string
+  }
+}
+
+export interface Block extends NxtConsensus {
+  blocksize: number
+  reward: number
+  signature: string
+  fee: number
+  generator: string
+  transactions: TxWithIdAndSender[]
+  version: number
+  reference: string
+  features: any[]
+  totalFee: number
+  desiredReward: number
+  transactionCount: number
+  timestamp: number
+  height: number
+}
+
+
+export type AliasTransaction = FieldToString<IAliasTransaction, 'timestamp'> & WithIdAndSender
+export type CancelLeaseTransaction = FieldToString<ICancelLeaseTransaction, 'timestamp'> & WithIdAndSender
+export type ExchangeTransaction = FieldToString<IExchangeTransaction, 'timestamp'> & WithIdAndSender
+export type BurnTransaction = FieldToString<IBurnTransaction, 'timestamp'> & WithIdAndSender
+export type TransferTransaction = FieldToString<ITransferTransaction, 'timestamp'> & WithIdAndSender
+export type MassTransferTransaction = FieldToString<IMassTransferTransaction, 'timestamp'> & WithIdAndSender
+export type DataTransaction = FieldToString<IDataTransaction, 'timestamp'> & WithIdAndSender
+export type SetScriptTransaction = FieldToString<ISetScriptTransaction, 'timestamp'> & WithIdAndSender
+export type IssueTransaction = FieldToString<IIssueTransaction, 'timestamp'> & WithIdAndSender
+export type InvokeScriptTransaction = FieldToString<IInvokeScriptTransaction, 'timestamp'> & WithIdAndSender
+export type Order = IOrder & WithIdAndSender
 
 export interface BaseParams {
   limit?: number

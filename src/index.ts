@@ -29,7 +29,8 @@ import {
   PagingOptions,
   StateChanges,
   DepositInfo,
-  GetAssetBalanceResponse
+  GetAssetBalanceResponse,
+  Block
 } from './types'
 
 export {
@@ -232,6 +233,10 @@ export const wavesApi = (config: IApiConfig, h: IHttp): IWavesApi => {
 
   const getHeight = async () => node.get<{ height: number }>('blocks/last').then(x => x.height)
 
+  const getBlocks = async (from: number, to: number) => node.get<Block[]>(`blocks/seq/${from}/${to}`)
+
+  const getLastNBlocks = async (n: number) => getHeight().then(h => getBlocks(h - n, h))
+
   const getTxById = async (txId: string): Promise<TxWithIdAndSender> =>
     node.get<TxWithIdAndSender>(`transactions/info/${txId}`)
 
@@ -346,6 +351,10 @@ export const wavesApi = (config: IApiConfig, h: IHttp): IWavesApi => {
     getHeight,
     waitForHeight,
 
+    //blocks
+    getBlocks,
+    getLastNBlocks,
+
     //txs
     getTxById,
     waitForTx,
@@ -407,6 +416,10 @@ export interface IWavesApi {
   //height
   getHeight(): Promise<number>
   waitForHeight(height: number): Promise<number>
+
+  //blocks
+  getBlocks(from: number, to: number): Promise<Block[]>
+  getLastNBlocks(n: number): Promise<Block[]>
 
   //txs
   getTxById(txId: string): Promise<TxWithIdAndSender>
