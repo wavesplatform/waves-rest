@@ -7,12 +7,23 @@ const { getBlocks, getHeight, getLastNBlocks } = wavesApi(config.testnet, axiosH
 
 const main = async () => {
 
-  const height = await getHeight()
-  const a = await getBlocks(height - 10, height)
-  const b = await getLastNBlocks(10)
+  // const height = await getHeight()
+  // const blocks = getBlocks(height - 450, height)
 
-  //console.log(JSON.stringify(a, undefined, 2))
-  console.log(JSON.stringify(b, undefined, 2))
+  // for await (const batch of blocks) {
+  //   console.log(batch.length)
+  // }
+
+  // const blocks2 = await getBlocks(height - 250, height).all()
+  // const blocks3 = await getBlocks(height - 250, height).first()
+
+  // console.log(blocks2.length)
+  // console.log(blocks3.length)
+
+  const lastBlocks = await getLastNBlocks(150).all()
+
+  console.log(lastBlocks.length)
+
 }
 
 main()

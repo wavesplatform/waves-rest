@@ -66,7 +66,24 @@ export const delay = (millis: number): Promise<{}> => new Promise((resolve, _) =
 
 export const WAVES_ASSET_ID = 'WAVES'
 
+export type EnchancedIterator<T> = AsyncIterable<T> & {
+  all: () => Promise<T>
+  first: () => Promise<T>
+}
+
 const isWavesAsset = (assetId: string) => !assetId || assetId === WAVES_ASSET_ID
+
+const enchanceIterator = <T>(iterator: AsyncIterable<T[]> & AsyncIterator<T[]>): EnchancedIterator<T[]> => ({
+  ...iterator,
+  first: () => iterator.next().then(x => x.value),
+  all: async () => {
+    const all: T[][] = []
+    for await (const i of iterator) {
+      all.push(i)
+    }
+    return all.reduce((a, b) => [...a, ...b], [])
+  },
+})
 
 const wrapError = (error: any) => {
   let er
@@ -196,10 +213,10 @@ export const wavesApi = (config: IApiConfig, h: IHttp): IWavesApi => {
       } while (take < count)
     }
 
-    const enchanceIterator = (iterator: AsyncIterableIterator<{ lastCursor: string, items: R[] }>) => ({
+    const ext = (iterator: AsyncIterableIterator<{ lastCursor: string, items: R[] }>) => ({
       ...iterator,
       first: () => iterator.next().then(x => x.value),
-      take: (count: number) => enchanceIterator(take(iterator, count)),
+      take: (count: number) => ext(take(iterator, count)),
       all: async () => {
         const all: R[][] = []
         for await (const i of iterator) {
@@ -209,7 +226,7 @@ export const wavesApi = (config: IApiConfig, h: IHttp): IWavesApi => {
       },
     })
 
-    return enchanceIterator(iterator)
+    return ext(iterator)
   }
 
   type ApiListReponse<T> = { lastCursor: string; data: { data: T }[] }
@@ -233,9 +250,31 @@ export const wavesApi = (config: IApiConfig, h: IHttp): IWavesApi => {
 
   const getHeight = async () => node.get<{ height: number }>('blocks/last').then(x => x.height)
 
-  const getBlocks = async (from: number, to: number) => node.get<Block[]>(`blocks/seq/${from}/${to}`)
+  const _getBlocks = async (from: number, to: number) => node.get<Block[]>(`blocks/seq/${from}/${to}`)
 
-  const getLastNBlocks = async (n: number) => getHeight().then(h => getBlocks(h - n, h))
+  function* blockIntervals(from: number, to: number, maxInterval: number = 99) {
+    while (from < to) {
+      yield { from, to: Math.min(from + maxInterval, to) }
+      from += maxInterval + 1
+    }
+  }
+
+  async function* getBlocksIterator(from: number, to?: number): AsyncIterable<Block[]> & AsyncIterator<Block[]> {
+    if (!to)
+      to = await getHeight()
+
+    if (from < 0)
+      from += to + 1
+
+    const intervals = blockIntervals(from, to)
+    for (const { from, to } of intervals) {
+      yield _getBlocks(from, to)
+    }
+  }
+
+  const getBlocks = (from: number, to: number) => enchanceIterator(getBlocksIterator(from, to))
+
+  const getLastNBlocks = (n: number) => enchanceIterator(getBlocksIterator(-n))
 
   const getTxById = async (txId: string): Promise<TxWithIdAndSender> =>
     node.get<TxWithIdAndSender>(`transactions/info/${txId}`)
@@ -418,8 +457,8 @@ export interface IWavesApi {
   waitForHeight(height: number): Promise<number>
 
   //blocks
-  getBlocks(from: number, to: number): Promise<Block[]>
-  getLastNBlocks(n: number): Promise<Block[]>
+  getBlocks(from: number, to: number): EnchancedIterator<Block[]>
+  getLastNBlocks(n: number): EnchancedIterator<Block[]>
 
   //txs
   getTxById(txId: string): Promise<TxWithIdAndSender>
