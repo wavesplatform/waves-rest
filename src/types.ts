@@ -15,6 +15,8 @@ import {
   IIssueTransaction,
   IInvokeScriptTransaction,
 } from '@waves/waves-transactions'
+import { TTransactionType } from '@waves/waves-transactions/dist/transactions'
+import { TxTypeMap } from '@waves/waves-transactions/dist/make-tx'
 
 export type LONG = string | number
 export type Sort = 'asc' | 'desc'
@@ -33,10 +35,6 @@ export interface WithIdAndSender extends WithId, WithSender {
 
 export type FieldToString<T, K extends keyof T> = Omit<T, K> & { [P in K]: string }
 
-export namespace BlockTxs {
-  export type AliasTransaction = FieldToString<IAliasTransaction, 'timestamp'> & WithIdAndSender
-}
-
 export interface NxtConsensus {
   'nxt-consensus': {
     'base-target': number
@@ -44,7 +42,8 @@ export interface NxtConsensus {
   }
 }
 
-export interface Block extends NxtConsensus {
+
+export interface IBlock extends NxtConsensus {
   blocksize: number
   reward: number
   signature: string
@@ -61,6 +60,14 @@ export interface Block extends NxtConsensus {
   height: number
 }
 
+export interface IBlocksTransactions {
+  <T extends TTransactionType>(filterByType: T): Array<TxTypeMap[T] & WithIdAndSender>
+  (filter: (tx: TxWithIdAndSender) => boolean): Array<TxWithIdAndSender>
+}
+
+export interface IBlocks extends Array<IBlock> {
+  transactions: IBlocksTransactions
+}
 
 export type AliasTransaction = FieldToString<IAliasTransaction, 'timestamp'> & WithIdAndSender
 export type CancelLeaseTransaction = FieldToString<ICancelLeaseTransaction, 'timestamp'> & WithIdAndSender

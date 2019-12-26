@@ -30,7 +30,9 @@ import {
   StateChanges,
   DepositInfo,
   GetAssetBalanceResponse,
-  Block
+  IBlock,
+  IBlocks,
+  WithIdAndSender
 } from './types'
 
 export {
@@ -58,6 +60,8 @@ import { TTx, IOrder, ICancelOrder } from '@waves/waves-transactions'
 import { IApiConfig } from './config'
 import { IHttp } from './http-bindings'
 import { address } from '@waves/ts-lib-crypto'
+import { TxTypeMap } from '@waves/waves-transactions/dist/make-tx'
+import { TTransactionType } from '@waves/waves-transactions/dist/transactions'
 export { IHttp, axiosHttp, apolloHttp } from './http-bindings'
 export * from './config'
 export * from './well-known-tokens'
@@ -73,17 +77,7 @@ export type EnchancedIterator<T> = AsyncIterable<T> & {
 
 const isWavesAsset = (assetId: string) => !assetId || assetId === WAVES_ASSET_ID
 
-const enchanceIterator = <T>(iterator: AsyncIterable<T[]> & AsyncIterator<T[]>): EnchancedIterator<T[]> => ({
-  ...iterator,
-  first: () => iterator.next().then(x => x.value),
-  all: async () => {
-    const all: T[][] = []
-    for await (const i of iterator) {
-      all.push(i)
-    }
-    return all.reduce((a, b) => [...a, ...b], [])
-  },
-})
+
 
 const wrapError = (error: any) => {
   let er
@@ -250,7 +244,27 @@ export const wavesApi = (config: IApiConfig, h: IHttp): IWavesApi => {
 
   const getHeight = async () => node.get<{ height: number }>('blocks/last').then(x => x.height)
 
-  const _getBlocks = async (from: number, to: number) => node.get<Block[]>(`blocks/seq/${from}/${to}`)
+  class Blocks extends Array<IBlock> implements IBlocks {
+    private _transactions: TxWithIdAndSender[] | undefined
+
+    transactions(filter: (tx: TxWithIdAndSender) => boolean): Array<TxWithIdAndSender>
+    transactions<T extends TTransactionType>(filterByType: T): Array<TxTypeMap[T] & WithIdAndSender>
+    transactions<T extends TTransactionType | (() => boolean)>(filterOrFilterByType: T): Array<T extends TTransactionType ? TxTypeMap[T] & WithIdAndSender : TxWithIdAndSender> {
+      if (!this._transactions)
+        this._transactions = this.reduce<TxWithIdAndSender[]>((a, b) => [...a, ...b.transactions], [])
+
+      const result = typeof filterOrFilterByType === 'number' ?
+        this._transactions.filter(x => x.type === filterOrFilterByType) :
+        this._transactions.filter(x => (<any>filterOrFilterByType)(x))
+
+      return result as Array<T extends TTransactionType ? TxTypeMap[T] & WithIdAndSender : TxWithIdAndSender>
+    }
+  }
+
+  const _getBlocks = async (from: number, to: number): Promise<IBlocks> => {
+    const blocks = await node.get<IBlock[]>(`blocks/seq/${from}/${to}`)
+    return new Blocks(...blocks)
+  }
 
   function* blockIntervals(from: number, to: number, maxInterval: number = 99) {
     while (from < to) {
@@ -258,8 +272,7 @@ export const wavesApi = (config: IApiConfig, h: IHttp): IWavesApi => {
       from += maxInterval + 1
     }
   }
-
-  async function* getBlocksIterator(from: number, to?: number): AsyncIterable<Block[]> & AsyncIterator<Block[]> {
+  async function* _getBlocksIterator(from: number, to?: number): AsyncIterable<IBlocks> & AsyncIterator<IBlocks> {
     if (!to)
       to = await getHeight()
 
@@ -271,10 +284,23 @@ export const wavesApi = (config: IApiConfig, h: IHttp): IWavesApi => {
       yield _getBlocks(from, to)
     }
   }
+  const enchanceBlocksIterator = (iterator: AsyncIterable<IBlocks> & AsyncIterator<IBlocks>): EnchancedIterator<IBlocks> => ({
+    ...iterator,
+    first: () => iterator.next().then(x => x.value),
+    all: async () => {
+      const all: IBlock[] = []
+      for await (const i of iterator) {
+        all.push(...i)
+      }
+      return new Blocks(...all)
+    },
+  })
+  const getBlocksIterator = (from: number, to?: number) => enchanceBlocksIterator(_getBlocksIterator(from, to))
 
-  const getBlocks = (from: number, to: number) => enchanceIterator(getBlocksIterator(from, to))
 
-  const getLastNBlocks = (n: number) => enchanceIterator(getBlocksIterator(-n))
+  const getBlocks = (from: number, to: number) => getBlocksIterator(from, to)
+
+  const getLastNBlocks = (n: number) => getBlocksIterator(-n)
 
   const getTxById = async (txId: string): Promise<TxWithIdAndSender> =>
     node.get<TxWithIdAndSender>(`transactions/info/${txId}`)
@@ -457,8 +483,8 @@ export interface IWavesApi {
   waitForHeight(height: number): Promise<number>
 
   //blocks
-  getBlocks(from: number, to: number): EnchancedIterator<Block[]>
-  getLastNBlocks(n: number): EnchancedIterator<Block[]>
+  getBlocks(from: number, to: number): EnchancedIterator<IBlocks>
+  getLastNBlocks(n: number): EnchancedIterator<IBlocks>
 
   //txs
   getTxById(txId: string): Promise<TxWithIdAndSender>
