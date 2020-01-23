@@ -32,7 +32,11 @@ import {
   GetAssetBalanceResponse,
   IBlock,
   IBlocks,
-  WithIdAndSender
+  WithIdAndSender,
+  TransactionTypeKey,
+  InferTxType,
+  TTransactionTypes,
+  TransactionTypes,
 } from './types'
 
 export {
@@ -53,15 +57,18 @@ export {
   OrderbookPair,
   GetAssetsBalanceResponse as GetAssetsBalanceParams,
   Distribution,
-  AssetInfo
+  AssetInfo,
+  TransactionTypeKey,
+  InferTxType,
+  TTransactionTypes,
+  TransactionTypes,
 } from './types'
 
 import { TTx, IOrder, ICancelOrder } from '@waves/waves-transactions'
 import { IApiConfig } from './config'
 import { IHttp } from './http-bindings'
 import { address } from '@waves/ts-lib-crypto'
-import { TxTypeMap } from '@waves/waves-transactions/dist/make-tx'
-import { TTransactionType } from '@waves/waves-transactions/dist/transactions'
+
 export { IHttp, axiosHttp, apolloHttp } from './http-bindings'
 export * from './config'
 export * from './well-known-tokens'
@@ -247,21 +254,31 @@ export const wavesApi = (config: IApiConfig, h: IHttp): IWavesApi => {
   class Blocks extends Array<IBlock> implements IBlocks {
     private _transactions: TxWithIdAndSender[] | undefined
 
+
     transactions(filter: (tx: TxWithIdAndSender) => boolean): Array<TxWithIdAndSender>
     transactions(): Array<TxWithIdAndSender>
-    transactions<T extends TTransactionType>(filterByType: T): Array<TxTypeMap[T] & WithIdAndSender>
-    transactions<T extends TTransactionType | (() => boolean)>(filterOrFilterByType?: T): Array<T extends TTransactionType ? TxTypeMap[T] & WithIdAndSender : TxWithIdAndSender> {
+    transactions<T extends TransactionTypeKey>(filterByType: T): Array<InferTxType<T>>
+    transactions<T extends TransactionTypeKey | (() => boolean)>(filterOrFilterByType?: T): Array<T extends TransactionTypeKey ? InferTxType<T> : TxWithIdAndSender> {
       if (!this._transactions)
         this._transactions = this.reduce<TxWithIdAndSender[]>((a, b) => [...a, ...b.transactions], [])
 
       if (!filterOrFilterByType)
-        return this._transactions  as Array<T extends TTransactionType ? TxTypeMap[T] & WithIdAndSender : TxWithIdAndSender>
-      
-      const result = typeof filterOrFilterByType === 'number' ?
-        this._transactions.filter(x => x.type === filterOrFilterByType) :
+        return this._transactions as Array<T extends TransactionTypeKey ? InferTxType<T> : TxWithIdAndSender>
+
+      const result = typeof filterOrFilterByType === 'string' ?
+        this._transactions.filter(x => x.type === TransactionTypes[filterOrFilterByType as TransactionTypeKey]) :
         this._transactions.filter(x => (<any>filterOrFilterByType)(x))
 
-      return result as Array<T extends TTransactionType ? TxTypeMap[T] & WithIdAndSender : TxWithIdAndSender>
+      return result as Array<T extends TransactionTypeKey ? InferTxType<T> : TxWithIdAndSender>
+    }
+
+    transactionsByType<T extends TransactionTypeKey>(...filterByType: T[]): { [K in T]: Array<InferTxType<T>> } {
+      if (!this._transactions)
+        this._transactions = this.reduce<TxWithIdAndSender[]>((a, b) => [...a, ...b.transactions], [])
+
+      const result = filterByType.reduce((r, i) => ({ ...r, [i]: this.transactions(filterByType[0]) }), {}) as { [K in T]: Array<InferTxType<T>> }
+
+      return result
     }
   }
 

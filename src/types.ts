@@ -15,11 +15,49 @@ import {
   IIssueTransaction,
   IInvokeScriptTransaction,
 } from '@waves/waves-transactions'
-import { TTransactionType } from '@waves/waves-transactions/dist/transactions'
 import { TxTypeMap } from '@waves/waves-transactions/dist/make-tx'
+
+export type TTransactionTypes = {
+  issue: 3,
+  transfer: 4,
+  reissue: 5,
+  burn: 6,
+  exchange: 7,
+  lease: 8,
+  cancelLease: 9,
+  alias: 10,
+  massTransfer: 11,
+  data: 12,
+  setScript: 13,
+  sponsorship: 14,
+  setAssetScript: 15,
+  invokeScript: 16,
+}
+
+
+export type TransactionTypeKey = keyof TTransactionTypes
+export type TransactionTypeNumber = TTransactionTypes[keyof TTransactionTypes]
+
+export const TransactionTypes: { [K in TransactionTypeKey]: TransactionTypeNumber } = {
+  issue: 3,
+  transfer: 4,
+  reissue: 5,
+  burn: 6,
+  exchange: 7,
+  lease: 8,
+  cancelLease: 9,
+  alias: 10,
+  massTransfer: 11,
+  data: 12,
+  setScript: 13,
+  sponsorship: 14,
+  setAssetScript: 15,
+  invokeScript: 16,
+}
 
 export type LONG = string | number
 export type Sort = 'asc' | 'desc'
+
 
 export const defaultSort: Sort = 'desc'
 
@@ -60,14 +98,21 @@ export interface IBlock extends NxtConsensus {
   height: number
 }
 
+export type InferTxType<T extends TransactionTypeKey> = TxTypeMap[TTransactionTypes[T]] & WithIdAndSender
+
 export interface IBlocksTransactions {
-  <T extends TTransactionType>(filterByType: T): Array<TxTypeMap[T] & WithIdAndSender>
+  <T extends TransactionTypeKey>(filterByType: T): Array<InferTxType<T> & WithIdAndSender>
   (filter: (tx: TxWithIdAndSender) => boolean): Array<TxWithIdAndSender>
   (): Array<TxWithIdAndSender>
 }
 
+export interface IBlocksTransactionsByType {
+  <T extends TransactionTypeKey>(...filterByType: T[]): { [K in T]: Array<InferTxType<T>> }
+}
+
 export interface IBlocks extends Array<IBlock> {
   transactions: IBlocksTransactions
+  transactionsByType: IBlocksTransactionsByType
 }
 
 export type AliasTransaction = FieldToString<IAliasTransaction, 'timestamp'> & WithIdAndSender

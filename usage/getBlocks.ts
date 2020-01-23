@@ -9,14 +9,12 @@ const main = async () => {
 
    const height = await getHeight()
 
-  for await (const batch of getBlocks(height - 450, height)) {
-    console.log(batch.transactions().length)
-  }
 
-  // const blocks2 = await getBlocks(height - 250, height).all()
+
+   const blocks2 = await getBlocks(height - 250, height).all()
   // const blocks3 = await getBlocks(height - 250, height).first()
 
-  // console.log(blocks2.length)
+   console.log(blocks2.length)
   // console.log(blocks3.length)
 
   //const lastBlocks = await getLastNBlocks(150).all()
