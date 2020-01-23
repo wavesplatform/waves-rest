@@ -63,6 +63,7 @@ export interface IBlock extends NxtConsensus {
 export interface IBlocksTransactions {
   <T extends TTransactionType>(filterByType: T): Array<TxTypeMap[T] & WithIdAndSender>
   (filter: (tx: TxWithIdAndSender) => boolean): Array<TxWithIdAndSender>
+  (): Array<TxWithIdAndSender>
 }
 
 export interface IBlocks extends Array<IBlock> {

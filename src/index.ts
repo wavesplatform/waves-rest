@@ -248,11 +248,15 @@ export const wavesApi = (config: IApiConfig, h: IHttp): IWavesApi => {
     private _transactions: TxWithIdAndSender[] | undefined
 
     transactions(filter: (tx: TxWithIdAndSender) => boolean): Array<TxWithIdAndSender>
+    transactions(): Array<TxWithIdAndSender>
     transactions<T extends TTransactionType>(filterByType: T): Array<TxTypeMap[T] & WithIdAndSender>
-    transactions<T extends TTransactionType | (() => boolean)>(filterOrFilterByType: T): Array<T extends TTransactionType ? TxTypeMap[T] & WithIdAndSender : TxWithIdAndSender> {
+    transactions<T extends TTransactionType | (() => boolean)>(filterOrFilterByType?: T): Array<T extends TTransactionType ? TxTypeMap[T] & WithIdAndSender : TxWithIdAndSender> {
       if (!this._transactions)
         this._transactions = this.reduce<TxWithIdAndSender[]>((a, b) => [...a, ...b.transactions], [])
 
+      if (!filterOrFilterByType)
+        return this._transactions  as Array<T extends TTransactionType ? TxTypeMap[T] & WithIdAndSender : TxWithIdAndSender>
+      
       const result = typeof filterOrFilterByType === 'number' ?
         this._transactions.filter(x => x.type === filterOrFilterByType) :
         this._transactions.filter(x => (<any>filterOrFilterByType)(x))
