@@ -9,11 +9,11 @@ const main = async () => {
 
   const lastBlocks = await getLastNBlocks(150).all()
 
-  const invokes = lastBlocks.transactions('invokeScript')
+  //const invokes = lastBlocks.transactions('invokeScript')
   const result = lastBlocks.transactionsByType('invokeScript')
 
-  console.log(invokes.map(x => x.call!.function))
-  console.log(result)
+  //console.log(invokes.map(x => x.call!.function))
+  console.log(result.invokeScript[0])
 
   
 

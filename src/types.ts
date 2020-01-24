@@ -1,9 +1,7 @@
 import {
   TTx,
   WithId,
-  WithSender,
   IOrder,
-  ICancelOrder,
   IAliasTransaction,
   ICancelLeaseTransaction,
   IExchangeTransaction,
@@ -65,10 +63,11 @@ export const defaultLimit = 100
 
 export type DataType = 'binary' | 'integer' | 'boolean' | 'string'
 
-export type TxWithIdAndSender = TTx & WithIdAndSender
+export type Tx = TTx & TExt & WithId
 
-export interface WithIdAndSender extends WithId, WithSender {
+export interface TExt {
   sender: string
+  height: number
 }
 
 export type FieldToString<T, K extends keyof T> = Omit<T, K> & { [P in K]: string }
@@ -87,7 +86,7 @@ export interface IBlock extends NxtConsensus {
   signature: string
   fee: number
   generator: string
-  transactions: TxWithIdAndSender[]
+  transactions: Tx[]
   version: number
   reference: string
   features: any[]
@@ -98,12 +97,12 @@ export interface IBlock extends NxtConsensus {
   height: number
 }
 
-export type InferTxType<T extends TransactionTypeKey> = TxTypeMap[TTransactionTypes[T]] & WithIdAndSender
+export type InferTxType<T extends TransactionTypeKey> = TxTypeMap[TTransactionTypes[T]] & TExt
 
 export interface IBlocksTransactions {
-  <T extends TransactionTypeKey>(filterByType: T): Array<InferTxType<T> & WithIdAndSender>
-  (filter: (tx: TxWithIdAndSender) => boolean): Array<TxWithIdAndSender>
-  (): Array<TxWithIdAndSender>
+  <T extends TransactionTypeKey>(filterByType: T): Array<InferTxType<T> & TExt>
+  (filter: (tx: Tx) => boolean): Array<Tx>
+  (): Array<Tx>
 }
 
 export interface IBlocksTransactionsByType {
@@ -115,17 +114,17 @@ export interface IBlocks extends Array<IBlock> {
   transactionsByType: IBlocksTransactionsByType
 }
 
-export type AliasTransaction = FieldToString<IAliasTransaction, 'timestamp'> & WithIdAndSender
-export type CancelLeaseTransaction = FieldToString<ICancelLeaseTransaction, 'timestamp'> & WithIdAndSender
-export type ExchangeTransaction = FieldToString<IExchangeTransaction, 'timestamp'> & WithIdAndSender
-export type BurnTransaction = FieldToString<IBurnTransaction, 'timestamp'> & WithIdAndSender
-export type TransferTransaction = FieldToString<ITransferTransaction, 'timestamp'> & WithIdAndSender
-export type MassTransferTransaction = FieldToString<IMassTransferTransaction, 'timestamp'> & WithIdAndSender
-export type DataTransaction = FieldToString<IDataTransaction, 'timestamp'> & WithIdAndSender
-export type SetScriptTransaction = FieldToString<ISetScriptTransaction, 'timestamp'> & WithIdAndSender
-export type IssueTransaction = FieldToString<IIssueTransaction, 'timestamp'> & WithIdAndSender
-export type InvokeScriptTransaction = FieldToString<IInvokeScriptTransaction, 'timestamp'> & WithIdAndSender
-export type Order = IOrder & WithIdAndSender
+export type AliasTransaction = FieldToString<IAliasTransaction, 'timestamp'> & TExt
+export type CancelLeaseTransaction = FieldToString<ICancelLeaseTransaction, 'timestamp'> & TExt
+export type ExchangeTransaction = FieldToString<IExchangeTransaction, 'timestamp'> & TExt
+export type BurnTransaction = FieldToString<IBurnTransaction, 'timestamp'> & TExt
+export type TransferTransaction = FieldToString<ITransferTransaction, 'timestamp'> & TExt
+export type MassTransferTransaction = FieldToString<IMassTransferTransaction, 'timestamp'> & TExt
+export type DataTransaction = FieldToString<IDataTransaction, 'timestamp'> & TExt
+export type SetScriptTransaction = FieldToString<ISetScriptTransaction, 'timestamp'> & TExt
+export type IssueTransaction = FieldToString<IIssueTransaction, 'timestamp'> & TExt
+export type InvokeScriptTransaction = FieldToString<IInvokeScriptTransaction, 'timestamp'> & TExt
+export type Order = IOrder & TExt
 
 export interface BaseParams {
   limit?: number

@@ -9,7 +9,7 @@ import {
   GetIssueTxsParams,
   GetInvokeScriptTxsParams,
   IssueTransaction,
-  TxWithIdAndSender,
+  Tx,
   SetScriptTransaction,
   Order,
   defaultSort,
@@ -32,7 +32,7 @@ import {
   GetAssetBalanceResponse,
   IBlock,
   IBlocks,
-  WithIdAndSender,
+  TExt,
   TransactionTypeKey,
   InferTxType,
   TTransactionTypes,
@@ -49,7 +49,7 @@ export {
   TransferTransaction,
   GetIssueTxsParams,
   IssueTransaction,
-  TxWithIdAndSender,
+  Tx as TxWithIdAndSender,
   SetScriptTransaction,
   Order,
   defaultLimit,
@@ -252,30 +252,31 @@ export const wavesApi = (config: IApiConfig, h: IHttp): IWavesApi => {
   const getHeight = async () => node.get<{ height: number }>('blocks/last').then(x => x.height)
 
   class Blocks extends Array<IBlock> implements IBlocks {
-    private _transactions: TxWithIdAndSender[] | undefined
+    private _transactions: Tx[] | undefined
 
 
-    transactions(filter: (tx: TxWithIdAndSender) => boolean): Array<TxWithIdAndSender>
-    transactions(): Array<TxWithIdAndSender>
+    transactions(filter: (tx: Tx) => boolean): Array<Tx>
+    transactions(): Array<Tx>
     transactions<T extends TransactionTypeKey>(filterByType: T): Array<InferTxType<T>>
-    transactions<T extends TransactionTypeKey | (() => boolean)>(filterOrFilterByType?: T): Array<T extends TransactionTypeKey ? InferTxType<T> : TxWithIdAndSender> {
+    transactions<T extends TransactionTypeKey | (() => boolean)>(filterOrFilterByType?: T): Array<T extends TransactionTypeKey ? InferTxType<T> : Tx> {
       if (!this._transactions)
-        this._transactions = this.reduce<TxWithIdAndSender[]>((a, b) => [...a, ...b.transactions], [])
+        this._transactions = this.reduce<Tx[]>((a, b) =>
+          [
+            ...a,
+            ...b.transactions.map(t => ({ ...t, height: b.height })),
+          ], [])
 
       if (!filterOrFilterByType)
-        return this._transactions as Array<T extends TransactionTypeKey ? InferTxType<T> : TxWithIdAndSender>
+        return this._transactions as Array<T extends TransactionTypeKey ? InferTxType<T> : Tx>
 
       const result = typeof filterOrFilterByType === 'string' ?
         this._transactions.filter(x => x.type === TransactionTypes[filterOrFilterByType as TransactionTypeKey]) :
         this._transactions.filter(x => (<any>filterOrFilterByType)(x))
 
-      return result as Array<T extends TransactionTypeKey ? InferTxType<T> : TxWithIdAndSender>
+      return result as Array<T extends TransactionTypeKey ? InferTxType<T> : Tx>
     }
 
     transactionsByType<T extends TransactionTypeKey>(...filterByType: T[]): { [K in T]: Array<InferTxType<T>> } {
-      if (!this._transactions)
-        this._transactions = this.reduce<TxWithIdAndSender[]>((a, b) => [...a, ...b.transactions], [])
-
       const result = filterByType.reduce((r, i) => ({ ...r, [i]: this.transactions(filterByType[0]) }), {}) as { [K in T]: Array<InferTxType<T>> }
 
       return result
@@ -323,21 +324,21 @@ export const wavesApi = (config: IApiConfig, h: IHttp): IWavesApi => {
 
   const getLastNBlocks = (n: number) => getBlocksIterator(-n)
 
-  const getTxById = async (txId: string): Promise<TxWithIdAndSender> =>
-    node.get<TxWithIdAndSender>(`transactions/info/${txId}`)
+  const getTxById = async (txId: string): Promise<Tx> =>
+    node.get<Tx>(`transactions/info/${txId}`)
 
-  const getUtxById = async (txId: string): Promise<TxWithIdAndSender> =>
-    node.get<TxWithIdAndSender>(`transactions/unconfirmed/info/${txId}`)
+  const getUtxById = async (txId: string): Promise<Tx> =>
+    node.get<Tx>(`transactions/unconfirmed/info/${txId}`)
 
-  const broadcast = async (tx: TTx): Promise<TxWithIdAndSender> =>
-    node.post<TxWithIdAndSender>('transactions/broadcast', tx)
+  const broadcast = async (tx: TTx): Promise<Tx> =>
+    node.post<Tx>('transactions/broadcast', tx)
 
-  const waitForTx = async (txId: string): Promise<TxWithIdAndSender> => retry(async () => getTxById(txId), 999, 1000)
+  const waitForTx = async (txId: string): Promise<Tx> => retry(async () => getTxById(txId), 999, 1000)
 
-  const getTxsByAddress = async (address: string, limit: number = 100): Promise<TxWithIdAndSender[]> =>
-    node.get<TxWithIdAndSender[][]>(`transactions/address/${address}/limit/${limit}`).then(x => x[0])
+  const getTxsByAddress = async (address: string, limit: number = 100): Promise<Tx[]> =>
+    node.get<Tx[][]>(`transactions/address/${address}/limit/${limit}`).then(x => x[0])
 
-  const broadcastAndWait = async (tx: TxWithIdAndSender): Promise<TxWithIdAndSender> =>
+  const broadcastAndWait = async (tx: Tx): Promise<Tx> =>
     broadcast(tx).then(x => waitForTx(x.id))
 
   const getAssetDistribution = async (assetId: string, height?: number, limit: number = 999): Promise<Distribution> =>
@@ -349,7 +350,7 @@ export const wavesApi = (config: IApiConfig, h: IHttp): IWavesApi => {
   const stateChanges = async (txId: string): Promise<StateChanges> =>
     node.get<StateChanges>(`debug/stateChanges/info/${txId}`)
 
-  const getUtx = (): Promise<TxWithIdAndSender[]> => node.get<TxWithIdAndSender[]>('transactions/unconfirmed')
+  const getUtx = (): Promise<Tx[]> => node.get<Tx[]>('transactions/unconfirmed')
 
   const getBalance = (address: string): Promise<number> =>
     node.get<{ available: number }>(`addresses/balance/details/${address}`).then(x => x.available)
@@ -508,11 +509,11 @@ export interface IWavesApi {
   getLastNBlocks(n: number): EnchancedIterator<IBlocks>
 
   //txs
-  getTxById(txId: string): Promise<TxWithIdAndSender>
-  waitForTx(txId: string): Promise<TxWithIdAndSender>
-  getUtx(): Promise<TxWithIdAndSender[]>
-  getUtxById(txId: string): Promise<TxWithIdAndSender>
-  getTxsByAddress(address: string, limit?: number): Promise<TxWithIdAndSender[]>
+  getTxById(txId: string): Promise<Tx>
+  waitForTx(txId: string): Promise<Tx>
+  getUtx(): Promise<Tx[]>
+  getUtxById(txId: string): Promise<Tx>
+  getTxsByAddress(address: string, limit?: number): Promise<Tx[]>
 
   //txs filters
   getTransfersTxs(params: GetTransferTxsParams, options?: PagingOptions): ApiIterable<TransferTransaction>
@@ -555,8 +556,8 @@ export interface IWavesApi {
   getDepositInfo(userAddress: string, assetId: string): Promise<DepositInfo>
 
   //broadcast
-  broadcast(tx: TTx): Promise<TxWithIdAndSender>
-  broadcastAndWait(tx: TTx): Promise<TxWithIdAndSender>
+  broadcast(tx: TTx): Promise<Tx>
+  broadcastAndWait(tx: TTx): Promise<Tx>
 
   config: IApiConfig
 }
