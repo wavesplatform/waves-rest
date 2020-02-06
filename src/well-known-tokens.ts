@@ -9,7 +9,9 @@ export interface ITokenInfo {
 export interface IWellKnownTokens {
   btc: ITokenInfo,
   eth: ITokenInfo,
-  usd: ITokenInfo,
+  wusd: ITokenInfo,
+  usdn: ITokenInfo,
+  usdt: ITokenInfo,
 }
 
 export const wellKnownTokens: { [K in 'testnet' | 'mainnet']: IWellKnownTokens } = {
@@ -26,11 +28,23 @@ export const wellKnownTokens: { [K in 'testnet' | 'mainnet']: IWellKnownTokens }
       ticker: 'ETH',
       decimals: 8,
     },
-    usd: {
+    wusd: {
       id: 'Ft8X1v1LTa1ABafufpaCWyVj8KkaxUWE6xBhW6sNFJck',
       name: 'US Dollar',
       ticker: 'USD',
       decimals: 2,
+    },
+    usdn: {
+      id: 'DG2xFkPdDwKUoBkzGAhQtLpSGzfXLiCYPEzeKH2Ad24p',
+      name: 'Neutrino',
+      ticker: 'USDN',
+      decimals: 6,
+    },
+    usdt: {
+      id: '34N9YcEETLWn93qYQ64EsP1x89tSruJU44RrEMSXXEPJ',
+      name: 'Tether USD',
+      ticker: 'USDT',
+      decimals: 6,
     },
   },
   testnet: {
@@ -46,11 +60,23 @@ export const wellKnownTokens: { [K in 'testnet' | 'mainnet']: IWellKnownTokens }
       ticker: 'ETH',
       decimals: 8,
     },
-    usd: {
+    wusd: {
       id: 'D6N2rAqWN6ZCWnCeNFWLGqqjS6nJLeK4m19XiuhdDenr',
       name: 'US Dollar',
       ticker: 'USD',
       decimals: 2,
+    },
+    usdn: {
+      id: '3KFXBGGLCjA5Z2DuW4Dq9fDDrHjJJP1ZEkaoajSzuKsC',
+      name: 'Neutrino',
+      ticker: 'USDN',
+      decimals: 6,
+    },
+    usdt: {
+      id: '5Sh9KghfkZyhjwuodovDhB6PghDUGBHiAPZ4MkrPgKtX',
+      name: 'Tether USD',
+      ticker: 'USDT',
+      decimals: 6,
     },
   },
 }
