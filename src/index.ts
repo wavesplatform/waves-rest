@@ -397,6 +397,9 @@ export const wavesApi = (config: IApiConfig, h: IHttp): IWavesApi => {
   const placeOrder = async (order: IOrder) =>
     matcher.post<{ message: Order }>('orderbook', order).then(x => x.message)
 
+  const placeMarketOrder = async (order: IOrder) =>
+    matcher.post<{ message: Order }>('orderbook/market', order).then(x => x.message)
+
   const cancelOrder = async (amountAsset: string, priceAsset: string, cancelOrder: ICancelOrder) =>
     matcher.post<void>(`orderbook/${amountAsset}/${priceAsset}/cancel`, cancelOrder)
 
@@ -482,6 +485,7 @@ export const wavesApi = (config: IApiConfig, h: IHttp): IWavesApi => {
 
     //matcher
     placeOrder,
+    placeMarketOrder,
     cancelOrder,
     getOrderbookPair,
     getWavesExchangeRate,
@@ -547,6 +551,7 @@ export interface IWavesApi {
 
   //matcher
   placeOrder(order: IOrder): Promise<Order>
+  placeMarketOrder(order: IOrder): Promise<Order>
   cancelOrder(amountAsset: string, priceAsset: string, cancelOrder: ICancelOrder): Promise<void>
   getOrderbookPair(amountAsset: string, priceAsset: string): Promise<OrderbookPair>
   getWavesExchangeRate(to: 'btc' | 'usd'): Promise<number>
