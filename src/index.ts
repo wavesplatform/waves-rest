@@ -251,78 +251,11 @@ export const wavesApi = (config: IApiConfig, h: IHttp): IWavesApi => {
 
   const getHeight = async () => node.get<{ height: number }>('blocks/last').then(x => x.height)
 
-  class Blocks extends Array<IBlock> implements IBlocks {
-    private _transactions: Tx[] | undefined
-
-
-    transactions(filter: (tx: Tx) => boolean): Array<Tx>
-    transactions(): Array<Tx>
-    transactions<T extends TransactionTypeKey>(filterByType: T): Array<InferTxType<T>>
-    transactions<T extends TransactionTypeKey | (() => boolean)>(filterOrFilterByType?: T): Array<T extends TransactionTypeKey ? InferTxType<T> : Tx> {
-      if (!this._transactions)
-        this._transactions = this.reduce<Tx[]>((a, b) =>
-          [
-            ...a,
-            ...b.transactions.map(t => ({ ...t, height: b.height })),
-          ], [])
-
-      if (!filterOrFilterByType)
-        return this._transactions as Array<T extends TransactionTypeKey ? InferTxType<T> : Tx>
-
-      const result = typeof filterOrFilterByType === 'string' ?
-        this._transactions.filter(x => x.type === TransactionTypes[filterOrFilterByType as TransactionTypeKey]) :
-        this._transactions.filter(x => (<any>filterOrFilterByType)(x))
-
-      return result as Array<T extends TransactionTypeKey ? InferTxType<T> : Tx>
-    }
-
-    transactionsByType<T extends TransactionTypeKey>(...filterByType: T[]): { [K in T]: Array<InferTxType<T>> } {
-      const result = filterByType.reduce((r, i) => ({ ...r, [i]: this.transactions(filterByType[0]) }), {}) as { [K in T]: Array<InferTxType<T>> }
-
-      return result
-    }
-  }
-
-  const _getBlocks = async (from: number, to: number): Promise<IBlocks> => {
+  const getBlocksTransactions = async (from: number, to: number): Promise<Tx[]> => {
     const blocks = await node.get<IBlock[]>(`blocks/seq/${from}/${to}`)
-    return new Blocks(...blocks)
+    const txs = blocks.map(x => x.transactions.map(tx => { tx.height = x.height; return tx }))
+    return ([] as Tx[]).concat.apply([], txs)
   }
-
-  function* blockIntervals(from: number, to: number, maxInterval: number = 99) {
-    while (from < to) {
-      yield { from, to: Math.min(from + maxInterval, to) }
-      from += maxInterval + 1
-    }
-  }
-  async function* _getBlocksIterator(from: number, to?: number): AsyncIterable<IBlocks> & AsyncIterator<IBlocks> {
-    if (!to)
-      to = await getHeight()
-
-    if (from < 0)
-      from += to + 1
-
-    const intervals = blockIntervals(from, to)
-    for (const { from, to } of intervals) {
-      yield _getBlocks(from, to)
-    }
-  }
-  const enchanceBlocksIterator = (iterator: AsyncIterable<IBlocks> & AsyncIterator<IBlocks>): EnchancedIterator<IBlocks> => ({
-    ...iterator,
-    first: () => iterator.next().then(x => x.value),
-    all: async () => {
-      const all: IBlock[] = []
-      for await (const i of iterator) {
-        all.push(...i)
-      }
-      return new Blocks(...all)
-    },
-  })
-  const getBlocksIterator = (from: number, to?: number) => enchanceBlocksIterator(_getBlocksIterator(from, to))
-
-
-  const getBlocks = (from: number, to: number) => getBlocksIterator(from, to)
-
-  const getLastNBlocks = (n: number) => getBlocksIterator(-n)
 
   const getTxById = async (txId: string): Promise<Tx> =>
     node.get<Tx>(`transactions/info/${txId}`)
@@ -442,8 +375,7 @@ export const wavesApi = (config: IApiConfig, h: IHttp): IWavesApi => {
     waitForHeight,
 
     //blocks
-    getBlocks,
-    getLastNBlocks,
+    getBlocksTransactions,
 
     //txs
     getTxById,
@@ -509,8 +441,7 @@ export interface IWavesApi {
   waitForHeight(height: number): Promise<number>
 
   //blocks
-  getBlocks(from: number, to: number): EnchancedIterator<IBlocks>
-  getLastNBlocks(n: number): EnchancedIterator<IBlocks>
+  getBlocksTransactions(from: number, to: number): Promise<Tx[]>
 
   //txs
   getTxById(txId: string): Promise<Tx>
