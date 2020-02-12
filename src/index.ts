@@ -328,10 +328,10 @@ export const wavesApi = (config: IApiConfig, h: IHttp): IWavesApi => {
     matcher.get<OrderbookPair>(`orderbook/${amountAsset}/${priceAsset}`)
 
   const placeOrder = async (order: IOrder) =>
-    matcher.post<{ message: Order }>('orderbook', order).then(x => x.message)
+    matcher.post<{ message: Order & { id: string }, status: string }>('orderbook', order).then(x => x.message)
 
   const placeMarketOrder = async (order: IOrder) =>
-    matcher.post<{ message: Order }>('orderbook/market', order).then(x => x.message)
+    matcher.post<{ message: Order & { id: string }, status: string }>('orderbook/market', order).then(x => x.message)
 
   const cancelOrder = async (amountAsset: string, priceAsset: string, cancelOrder: ICancelOrder) =>
     matcher.post<void>(`orderbook/${amountAsset}/${priceAsset}/cancel`, cancelOrder)
