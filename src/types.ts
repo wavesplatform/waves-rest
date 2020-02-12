@@ -210,6 +210,21 @@ export interface OrderbookPair {
   asks: AmountPrice[]
 }
 
+export interface OrderbookPairRestrictions {
+  restrictions: {
+    stepAmount: number
+    minAmount: number
+    maxAmount: number
+    stepPrice: number
+    minPrice: number
+    maxPrice: number
+  }
+  matchingRules: {
+    tickSize: number
+  }
+}
+
+
 export interface OrderStatus {
   status: 'Accepted' | 'NotFound' | 'PartiallyFilled' | 'Filled' | 'Cancelled'
   filledAmount: number

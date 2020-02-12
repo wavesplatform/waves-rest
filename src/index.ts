@@ -38,6 +38,7 @@ import {
   TTransactionTypes,
   TransactionTypes,
   GetOrdetStatusParams,
+  OrderbookPairRestrictions,
 } from './types'
 
 export {
@@ -278,8 +279,24 @@ export const wavesApi = (config: IApiConfig, h: IHttp): IWavesApi => {
   const getAssetDistribution = async (assetId: string, height?: number, limit: number = 999): Promise<Distribution> =>
     node.get<Distribution>(`assets/${assetId}/distribution/${height || await getHeight() - 1}/limit/${limit}`)
 
-  const getAssetInfo = async (assetId: string): Promise<AssetInfo> =>
-    node.get<AssetInfo>(`assets/details/${assetId}`)
+  const getAssetInfo = async (assetId: string): Promise<AssetInfo> => {
+    if (assetId === WAVES_ASSET_ID) {
+      return {
+        assetId: WAVES_ASSET_ID,
+        decimals: 8,
+        description: WAVES_ASSET_ID,
+        issueHeight: 0,
+        issueTimestamp: 0,
+        issuer: WAVES_ASSET_ID,
+        name: WAVES_ASSET_ID,
+        minSponsoredAssetFee: 0,
+        quantity: 0,
+        reissuable: false,
+        scripted: false,
+      }
+    }
+    return node.get<AssetInfo>(`assets/details/${assetId}`)
+  }
 
   const stateChanges = async (txId: string): Promise<StateChanges> =>
     node.get<StateChanges>(`debug/stateChanges/info/${txId}`)
@@ -328,6 +345,23 @@ export const wavesApi = (config: IApiConfig, h: IHttp): IWavesApi => {
   const getOrderbookPair = async (amountAsset: string, priceAsset: string): Promise<OrderbookPair> =>
     matcher.get<OrderbookPair>(`orderbook/${amountAsset}/${priceAsset}`)
 
+  const getOrderbookPairRestrictions = async (amountAsset: string, priceAsset: string): Promise<OrderbookPairRestrictions> => {
+    const [priceAssetInfo, amountAssetInfo] = await Promise.all([getAssetInfo(priceAsset), getAssetInfo(amountAsset)])
+    return await matcher.get<OrderbookPairRestrictions>(`orderbook/${amountAsset}/${priceAsset}/info`)
+      .then(x => ({
+        matchingRules: { tickSize: Number(x.matchingRules.tickSize) * Math.pow(10, priceAssetInfo.decimals) },
+        restrictions: {
+          maxAmount: Number(x.restrictions.maxAmount) * Math.pow(10, amountAssetInfo.decimals),
+          minAmount: Number(x.restrictions.minAmount) * Math.pow(10, amountAssetInfo.decimals),
+          maxPrice: Number(x.restrictions.maxPrice) * Math.pow(10, priceAssetInfo.decimals),
+          minPrice: Number(x.restrictions.minPrice) * Math.pow(10, priceAssetInfo.decimals),
+          stepAmount: Number(x.restrictions.stepAmount) * Math.pow(10, amountAssetInfo.decimals),
+          stepPrice: Number(x.restrictions.stepPrice) * Math.pow(10, priceAssetInfo.decimals),
+        },
+      }))
+  }
+
+
   const placeOrder = async (order: IOrder) =>
     matcher.post<{ success: boolean, message: Order & { id: string }, status: string }>('orderbook', order).then(x => x)
 
@@ -336,6 +370,7 @@ export const wavesApi = (config: IApiConfig, h: IHttp): IWavesApi => {
 
   const getOrderStatus = async ({ orderId, amountAsset = WAVES_ASSET_ID, priceAsset = WAVES_ASSET_ID }: GetOrdetStatusParams) =>
     matcher.get<OrderStatus>(`orderbook/${amountAsset}/${priceAsset}/${orderId}`)
+
 
   const cancelOrder = async (amountAsset: string, priceAsset: string, cancelOrder: ICancelOrder) =>
     matcher.post<void>(`orderbook/${amountAsset}/${priceAsset}/cancel`, cancelOrder)
@@ -425,6 +460,7 @@ export const wavesApi = (config: IApiConfig, h: IHttp): IWavesApi => {
     getOrderStatus,
     cancelOrder,
     getOrderbookPair,
+    getOrderbookPairRestrictions,
     getWavesExchangeRate,
     getMarkets,
 
@@ -493,6 +529,7 @@ export interface IWavesApi {
   getOrderStatus(params: GetOrdetStatusParams): Promise<OrderStatus>
   cancelOrder(amountAsset: string, priceAsset: string, cancelOrder: ICancelOrder): Promise<void>
   getOrderbookPair(amountAsset: string, priceAsset: string): Promise<OrderbookPair>
+  getOrderbookPairRestrictions(amountAsset: string, priceAsset: string): Promise<OrderbookPairRestrictions>
   getWavesExchangeRate(to: 'btc' | 'usd'): Promise<number>
   getMarkets(): Promise<GetMarketsResponse>
 
