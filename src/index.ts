@@ -12,7 +12,7 @@ import {
   Tx,
   SetScriptTransaction,
   Order,
-  defaultSort,
+  OrderStatus,
   OrderbookPair,
   GetAssetsBalanceResponse,
   Distribution,
@@ -37,6 +37,7 @@ import {
   InferTxType,
   TTransactionTypes,
   TransactionTypes,
+  GetOrdetStatusParams,
 } from './types'
 
 export {
@@ -333,6 +334,9 @@ export const wavesApi = (config: IApiConfig, h: IHttp): IWavesApi => {
   const placeMarketOrder = async (order: IOrder) =>
     matcher.post<{ success: boolean, message: Order & { id: string }, status: string }>('orderbook/market', order).then(x => x)
 
+  const getOrderStatus = async ({ orderId, amountAsset = WAVES_ASSET_ID, priceAsset = WAVES_ASSET_ID }: GetOrdetStatusParams) =>
+    matcher.get<OrderStatus>(`orderbook/${amountAsset}/${priceAsset}/${orderId}`)
+
   const cancelOrder = async (amountAsset: string, priceAsset: string, cancelOrder: ICancelOrder) =>
     matcher.post<void>(`orderbook/${amountAsset}/${priceAsset}/cancel`, cancelOrder)
 
@@ -418,6 +422,7 @@ export const wavesApi = (config: IApiConfig, h: IHttp): IWavesApi => {
     //matcher
     placeOrder,
     placeMarketOrder,
+    getOrderStatus,
     cancelOrder,
     getOrderbookPair,
     getWavesExchangeRate,
@@ -480,9 +485,12 @@ export interface IWavesApi {
   decompileScript(scriptBinary: string): Promise<IScriptDecompileResult>
   stateChanges(txId: string): Promise<StateChanges>
 
+
+
   //matcher
   placeOrder(order: IOrder): Promise<{ success: boolean, message: Order & { id: string }, status: string }>
   placeMarketOrder(order: IOrder): Promise<{ success: boolean, message: Order & { id: string }, status: string }>
+  getOrderStatus(params: GetOrdetStatusParams): Promise<OrderStatus>
   cancelOrder(amountAsset: string, priceAsset: string, cancelOrder: ICancelOrder): Promise<void>
   getOrderbookPair(amountAsset: string, priceAsset: string): Promise<OrderbookPair>
   getWavesExchangeRate(to: 'btc' | 'usd'): Promise<number>

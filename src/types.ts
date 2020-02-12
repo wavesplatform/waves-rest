@@ -210,6 +210,18 @@ export interface OrderbookPair {
   asks: AmountPrice[]
 }
 
+export interface OrderStatus {
+  status: 'Accepted' | 'NotFound' | 'PartiallyFilled' | 'Filled' | 'Cancelled'
+  filledAmount: number
+  filledFee: number
+}
+
+export interface GetOrdetStatusParams {
+  orderId: string
+  amountAsset?: string
+  priceAsset?: string
+}
+
 export interface Distribution {
   hasNext: boolean
   lastItem: string
