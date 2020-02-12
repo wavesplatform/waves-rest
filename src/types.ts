@@ -218,7 +218,7 @@ export interface OrderbookPairRestrictions {
     stepPrice: number
     minPrice: number
     maxPrice: number
-  }
+  } | null
   matchingRules: {
     tickSize: number
   }

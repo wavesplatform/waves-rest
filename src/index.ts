@@ -350,14 +350,14 @@ export const wavesApi = (config: IApiConfig, h: IHttp): IWavesApi => {
     return await matcher.get<OrderbookPairRestrictions>(`orderbook/${amountAsset}/${priceAsset}/info`)
       .then(x => ({
         matchingRules: { tickSize: Number(x.matchingRules.tickSize) * Math.pow(10, priceAssetInfo.decimals) },
-        restrictions: {
+        restrictions: x.restrictions ? {
           maxAmount: Number(x.restrictions.maxAmount) * Math.pow(10, amountAssetInfo.decimals),
           minAmount: Number(x.restrictions.minAmount) * Math.pow(10, amountAssetInfo.decimals),
           maxPrice: Number(x.restrictions.maxPrice) * Math.pow(10, priceAssetInfo.decimals),
           minPrice: Number(x.restrictions.minPrice) * Math.pow(10, priceAssetInfo.decimals),
           stepAmount: Number(x.restrictions.stepAmount) * Math.pow(10, amountAssetInfo.decimals),
           stepPrice: Number(x.restrictions.stepPrice) * Math.pow(10, priceAssetInfo.decimals),
-        },
+        } : null,
       }))
   }
 
