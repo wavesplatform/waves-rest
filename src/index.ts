@@ -368,8 +368,8 @@ export const wavesApi = (config: IApiConfig, h: IHttp): IWavesApi => {
   const placeMarketOrder = async (order: IOrder) =>
     matcher.post<{ success: boolean, message: Order & { id: string }, status: string }>('orderbook/market', order).then(x => x)
 
-  const getOrderStatus = async ({ orderId, amountAsset = WAVES_ASSET_ID, priceAsset = WAVES_ASSET_ID }: GetOrdetStatusParams) =>
-    matcher.get<OrderStatus>(`orderbook/${amountAsset}/${priceAsset}/${orderId}`)
+  const getOrderStatus = async ({ orderId, amountAsset, priceAsset }: GetOrdetStatusParams) =>
+    matcher.get<OrderStatus>(`orderbook/${amountAsset || WAVES_ASSET_ID}/${priceAsset || WAVES_ASSET_ID}/${orderId}`)
 
 
   const cancelOrder = async (amountAsset: string, priceAsset: string, cancelOrder: ICancelOrder) =>
