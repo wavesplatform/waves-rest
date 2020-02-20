@@ -233,8 +233,8 @@ export interface OrderStatus {
 
 export interface GetOrdetStatusParams {
   orderId: string
-  amountAsset?: string
-  priceAsset?: string
+  amountAsset?: string | null
+  priceAsset?: string | null
 }
 
 export interface Distribution {
