@@ -37,8 +37,9 @@ import {
   InferTxType,
   TTransactionTypes,
   TransactionTypes,
-  GetOrdetStatusParams,
+  GetOrdetStatusParams as GetOrderStatusParams,
   OrderbookPairRestrictions,
+  WaitForOrderToFillParams,
 } from './types'
 
 export {
@@ -368,9 +369,25 @@ export const wavesApi = (config: IApiConfig, h: IHttp): IWavesApi => {
   const placeMarketOrder = async (order: IOrder) =>
     matcher.post<{ success: boolean, message: Order & { id: string }, status: string }>('orderbook/market', order).then(x => x)
 
-  const getOrderStatus = async ({ orderId, amountAsset, priceAsset }: GetOrdetStatusParams) =>
+  const placeMarketOrderAndWaitUntilFill = async (order: IOrder, timeoutInSeconds = 3) => {
+    const result = await placeMarketOrder(order)
+    if (result.status !== 'OrderAccepted')
+      throw new Error(JSON.stringify(result))
+    return waitForOrderToFill({
+      orderId: result.message.id,
+      amountAsset: result.message.assetPair.amountAsset,
+      priceAsset: result.message.assetPair.priceAsset,
+      timeoutInSeconds,
+    })
+  }
+
+  const getOrderStatus = async ({ orderId, amountAsset, priceAsset }: GetOrderStatusParams) =>
     matcher.get<OrderStatus>(`orderbook/${amountAsset || WAVES_ASSET_ID}/${priceAsset || WAVES_ASSET_ID}/${orderId}`)
 
+  const waitForOrderToFill = async ({ orderId, amountAsset, priceAsset, timeoutInSeconds }: WaitForOrderToFillParams): Promise<OrderStatus> =>
+    retry(async () => getOrderStatus({ orderId, amountAsset, priceAsset })
+      .then(x => x.status === 'Filled' ? Promise.resolve(x) : Promise.reject('retry')), timeoutInSeconds || 3, 1000)
+      .catch(x => Promise.reject('timeout'))
 
   const cancelOrder = async (amountAsset: string, priceAsset: string, cancelOrder: ICancelOrder) =>
     matcher.post<void>(`orderbook/${amountAsset}/${priceAsset}/cancel`, cancelOrder)
@@ -457,6 +474,7 @@ export const wavesApi = (config: IApiConfig, h: IHttp): IWavesApi => {
     //matcher
     placeOrder,
     placeMarketOrder,
+    placeMarketOrderAndWaitUntilFill,
     getOrderStatus,
     cancelOrder,
     getOrderbookPair,
@@ -526,7 +544,8 @@ export interface IWavesApi {
   //matcher
   placeOrder(order: IOrder): Promise<{ success: boolean, message: Order & { id: string }, status: string }>
   placeMarketOrder(order: IOrder): Promise<{ success: boolean, message: Order & { id: string }, status: string }>
-  getOrderStatus(params: GetOrdetStatusParams): Promise<OrderStatus>
+  placeMarketOrderAndWaitUntilFill(order: IOrder, timeoutInSeconds?: number): Promise<OrderStatus>
+  getOrderStatus(params: GetOrderStatusParams): Promise<OrderStatus>
   cancelOrder(amountAsset: string, priceAsset: string, cancelOrder: ICancelOrder): Promise<void>
   getOrderbookPair(amountAsset: string, priceAsset: string): Promise<OrderbookPair>
   getOrderbookPairRestrictions(amountAsset: string, priceAsset: string): Promise<OrderbookPairRestrictions>

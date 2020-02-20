@@ -11,7 +11,7 @@ export const config: { [K in 'testnet' | 'mainnet' | 'stage']: IApiConfig } = {
   testnet: {
     nodes: 'https://nodes-testnet.wavesnodes.com/',
     api: 'https://api.testnet.wavesplatform.com/v0/',
-    matcher: 'https://matcher.testnet.wavesnodes.com/matcher/',
+    matcher: 'https://matcher-testnet.wavesnodes.com/matcher/',
     matcherPublicKey: '8QUAqtTckM5B8gvcuP7mMswat9SjKUuafJMusEoSn1Gy',
     chainId: 'T',
   },

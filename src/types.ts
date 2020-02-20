@@ -231,6 +231,13 @@ export interface OrderStatus {
   filledFee: number
 }
 
+export interface WaitForOrderToFillParams {
+  orderId: string
+  amountAsset?: string | null | undefined
+  priceAsset?: string | null | undefined
+  timeoutInSeconds?: number
+}
+
 export interface GetOrdetStatusParams {
   orderId: string
   amountAsset?: string | null | undefined
