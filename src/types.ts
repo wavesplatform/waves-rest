@@ -235,6 +235,7 @@ export interface WaitForOrderToFillParams {
   orderId: string
   amountAsset?: string | null | undefined
   priceAsset?: string | null | undefined
+  status: OrderStatus['status']
   timeoutInSeconds?: number
 }
 
