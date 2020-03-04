@@ -67,7 +67,7 @@ export {
   TransactionTypes,
 } from './types'
 
-import { TTx, IOrder, ICancelOrder, cancelOrder as _cancelOrder } from '@waves/waves-transactions'
+import { TTx, IOrder, ICancelOrder, cancelOrder as _cancelOrder, libs } from '@waves/waves-transactions'
 import { IApiConfig } from './config'
 import { IHttp } from './http-bindings'
 import { address } from '@waves/ts-lib-crypto'
@@ -280,6 +280,8 @@ export const wavesApi = (config: IApiConfig, h: IHttp): IWavesApi => {
   const getAssetDistribution = async (assetId: string, height?: number, limit: number = 999): Promise<Distribution> =>
     node.get<Distribution>(`assets/${assetId}/distribution/${height || await getHeight() - 1}/limit/${limit}`)
 
+  const _assetInfoCache: Record<string, AssetInfo> = {}
+
   const getAssetInfo = async (assetId: string): Promise<AssetInfo> => {
     if (assetId === WAVES_ASSET_ID) {
       return {
@@ -296,7 +298,14 @@ export const wavesApi = (config: IApiConfig, h: IHttp): IWavesApi => {
         scripted: false,
       }
     }
-    return node.get<AssetInfo>(`assets/details/${assetId}`)
+
+    if (_assetInfoCache[assetId])
+      return _assetInfoCache[assetId]
+
+    return node.get<AssetInfo>(`assets/details/${assetId}`).then(info => {
+      _assetInfoCache[assetId] = info
+      return info
+    })
   }
 
   const stateChanges = async (txId: string): Promise<StateChanges> =>
@@ -346,18 +355,23 @@ export const wavesApi = (config: IApiConfig, h: IHttp): IWavesApi => {
   const getOrderbookPair = async (amountAsset: string, priceAsset: string): Promise<OrderbookPair> =>
     matcher.get<OrderbookPair>(`orderbook/${amountAsset}/${priceAsset}`)
 
-  const getOrderbookPairRestrictions = async (amountAsset: string, priceAsset: string): Promise<OrderbookPairRestrictions> => {
-    const [priceAssetInfo, amountAssetInfo] = await Promise.all([getAssetInfo(priceAsset), getAssetInfo(amountAsset)])
+  const getOrderbookPairRestrictions = async (amountAsset: string | { id: string, decimals: number }, priceAsset: string | { id: string, decimals: number }): Promise<OrderbookPairRestrictions> => {
+
+    const [{ decimals: amountDecimals }, { decimals: priceDecimals }] = await Promise.all([
+      typeof amountAsset === 'string' ? getAssetInfo(amountAsset).then(({ decimals }) => ({ id: amountAsset, decimals })) : Promise.resolve(amountAsset),
+      typeof priceAsset === 'string' ? getAssetInfo(priceAsset).then(({ decimals }) => ({ id: priceAsset, decimals })) : Promise.resolve(priceAsset)
+    ])
+
     return await matcher.get<OrderbookPairRestrictions>(`orderbook/${amountAsset}/${priceAsset}/info`)
       .then(x => ({
-        matchingRules: { tickSize: Number(x.matchingRules.tickSize) * Math.pow(10, priceAssetInfo.decimals) },
+        matchingRules: { tickSize: Number(x.matchingRules.tickSize) * Math.pow(10, priceDecimals) },
         restrictions: x.restrictions ? {
-          maxAmount: Number(x.restrictions.maxAmount) * Math.pow(10, amountAssetInfo.decimals),
-          minAmount: Number(x.restrictions.minAmount) * Math.pow(10, amountAssetInfo.decimals),
-          maxPrice: Number(x.restrictions.maxPrice) * Math.pow(10, priceAssetInfo.decimals),
-          minPrice: Number(x.restrictions.minPrice) * Math.pow(10, priceAssetInfo.decimals),
-          stepAmount: Number(x.restrictions.stepAmount) * Math.pow(10, amountAssetInfo.decimals),
-          stepPrice: Number(x.restrictions.stepPrice) * Math.pow(10, priceAssetInfo.decimals),
+          maxAmount: Number(x.restrictions.maxAmount) * Math.pow(10, amountDecimals),
+          minAmount: Number(x.restrictions.minAmount) * Math.pow(10, amountDecimals),
+          maxPrice: Number(x.restrictions.maxPrice) * Math.pow(10, priceDecimals),
+          minPrice: Number(x.restrictions.minPrice) * Math.pow(10, priceDecimals),
+          stepAmount: Number(x.restrictions.stepAmount) * Math.pow(10, amountDecimals),
+          stepPrice: Number(x.restrictions.stepPrice) * Math.pow(10, priceDecimals),
         } : null,
       }))
   }
