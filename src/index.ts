@@ -565,7 +565,7 @@ export interface IWavesApi {
   waitForOrderStatus({ orderId, amountAsset, priceAsset, status, timeoutInSeconds }: WaitForOrderToFillParams): Promise<OrderStatus>
   cancelOrder(amountAsset: string, priceAsset: string, cancelOrder: ICancelOrder): Promise<void>
   getOrderbookPair(amountAsset: string, priceAsset: string): Promise<OrderbookPair>
-  getOrderbookPairRestrictions(amountAsset: string, priceAsset: string): Promise<OrderbookPairRestrictions>
+  getOrderbookPairRestrictions(amountAsset: string | { id: string, decimals: number }, priceAsset: string | { id: string, decimals: number }): Promise<OrderbookPairRestrictions>
   getWavesExchangeRate(to: 'btc' | 'usd'): Promise<number>
   getMarkets(): Promise<GetMarketsResponse>
 
