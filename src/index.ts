@@ -357,12 +357,18 @@ export const wavesApi = (config: IApiConfig, h: IHttp): IWavesApi => {
 
   const getOrderbookPairRestrictions = async (amountAsset: string | { id: string, decimals: number }, priceAsset: string | { id: string, decimals: number }): Promise<OrderbookPairRestrictions> => {
 
-    const [{ decimals: amountDecimals }, { decimals: priceDecimals }] = await Promise.all([
+    if (!amountAsset)
+      amountAsset = WAVES_ASSET_ID
+
+    if (!priceAsset)
+      priceAsset = WAVES_ASSET_ID
+
+    const [{ id: amountAssetId, decimals: amountDecimals }, { id: priceAssetId, decimals: priceDecimals }] = await Promise.all([
       typeof amountAsset === 'string' ? getAssetInfo(amountAsset).then(({ decimals }) => ({ id: amountAsset, decimals })) : Promise.resolve(amountAsset),
       typeof priceAsset === 'string' ? getAssetInfo(priceAsset).then(({ decimals }) => ({ id: priceAsset, decimals })) : Promise.resolve(priceAsset)
     ])
 
-    return await matcher.get<OrderbookPairRestrictions>(`orderbook/${amountAsset}/${priceAsset}/info`)
+    return await matcher.get<OrderbookPairRestrictions>(`orderbook/${amountAssetId}/${priceAssetId}/info`)
       .then(x => ({
         matchingRules: { tickSize: Number(x.matchingRules.tickSize) * Math.pow(10, priceDecimals) },
         restrictions: x.restrictions ? {
