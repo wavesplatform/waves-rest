@@ -179,7 +179,7 @@ export const wavesApi = (config: IApiConfig, h: IHttp): IWavesApi => {
     data
       ? http.post<T>(joinUrl(base, endpoint), data)
       : http.get<T>(joinUrl(base, endpoint))
-  ).catch(x => wrapError(x)) as Promise<T>
+  ).catch(x => Promise.reject(wrapError(x))) as Promise<T>
 
   const noEnpoint = <T>(): Promise<T> => {
     throw new Error(`Endpoint is not awailable in chain with ID: ${config.chainId}`)

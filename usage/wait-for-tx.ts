@@ -8,10 +8,11 @@ const { waitForTx } = wavesApi(config.testnet, axiosHttp(axios))
 
 const main = async () => {
   try {
-    const r = await waitForTx('B7fJdxWZKvjRZE25J5xg6EnvPNvRytsqGRHArYvrWwUS', 2)
+    const r = await waitForTx('B7fJdxWZKvjRZE25J5xg6EnvPNvRytsqGRHArYvrWwUS', 1)
     console.log(r)
   } catch (error) {
-    console.log(error)
+    console.log(error.isAxiosError)
+    console.log(error.response.data)
   }
 }
 
