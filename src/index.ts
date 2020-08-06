@@ -145,8 +145,12 @@ export const retry = async <T>(action: () => Promise<T>, limit: number, delayAft
     return await action()
   } catch (error) {
     const er = wrapError(error)
-    if (er && er.code) throw er
-    if (limit < 1) throw er
+    if (er && er.code) {
+      throw er
+    }
+    if (limit < 1) {
+      throw er
+    }
   }
 
   await delay(delayAfterFail)
@@ -171,8 +175,7 @@ export const wavesApi = (config: IApiConfig, h: IHttp): IWavesApi => {
     return aa + '/' + bb
   }
 
-  const httpCall = <T>(base: string, endpoint: string, data?: any) =>
-    retry(() => (data ? http.post<T>(joinUrl(base, endpoint), data) : http.get<T>(joinUrl(base, endpoint))), 5, 1000)
+  const httpCall = <T>(base: string, endpoint: string, data?: any) => data ? http.post<T>(joinUrl(base, endpoint), data) : http.get<T>(joinUrl(base, endpoint))
 
   const noEnpoint = <T>(): Promise<T> => {
     throw new Error(`Endpoint is not awailable in chain with ID: ${config.chainId}`)
@@ -278,8 +281,8 @@ export const wavesApi = (config: IApiConfig, h: IHttp): IWavesApi => {
   const getTxsByAddress = async (address: string, limit: number = 100): Promise<Tx[]> =>
     node.get<Tx[][]>(`transactions/address/${address}/limit/${limit}`).then(x => x[0])
 
-  const broadcastAndWait = async (tx: Tx): Promise<Tx> =>
-    broadcast(tx).then(x => waitForTx(x.id))
+  const broadcastAndWait = async (tx: Tx, timeoutInSeconds = 60): Promise<Tx> =>
+    broadcast(tx).then(x => waitForTx(x.id, timeoutInSeconds))
 
   const getAssetDistribution = async (assetId: string, height?: number, limit: number = 999): Promise<Distribution> =>
     node.get<Distribution>(`assets/${assetId}/distribution/${height || await getHeight() - 1}/limit/${limit}`)
