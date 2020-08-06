@@ -587,7 +587,7 @@ export interface IWavesApi {
 
   //broadcast
   broadcast(tx: TTx): Promise<Tx>
-  broadcastAndWait(tx: TTx): Promise<Tx>
+  broadcastAndWait(tx: TTx, timeoutInSeconds?: number): Promise<Tx>
 
   config: IApiConfig
 }
