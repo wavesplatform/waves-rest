@@ -98,12 +98,14 @@ const wrapError = (error: any) => {
           code: 112,
           message: error.response.data.message,
           tx: error.response.data.tx,
+          raw: er,
         }
         break
       case 199: //script too lagre
         er = {
           code: 199,
           message: error.response.data.message,
+          raw: er,
         }
         break
       case 306: //error while executing
@@ -112,6 +114,7 @@ const wrapError = (error: any) => {
           message: error.response.data.message,
           tx: error.response.data.transaction,
           trace: error.response.data.trace,
+          raw: er,
         }
         if (error.response.data.vars) {
           (<any>er).vars = error.response.data.vars.reduce((a: [], b: []) => [...a, ...b], [])
@@ -123,6 +126,7 @@ const wrapError = (error: any) => {
           message: error.response.data.message,
           tx: error.response.data.transaction,
           trace: error.response.data.trace,
+          raw: er,
         }
         if (error.response.data.vars) {
           (<any>er).vars = error.response.data.vars.reduce((a: [], b: []) => [...a, ...b], [])
