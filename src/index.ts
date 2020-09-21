@@ -98,6 +98,7 @@ const wrapError = (error: any) => {
           code: 112,
           message: error.response.data.message,
           tx: error.response.data.tx,
+          details: error.response.data.details,
           raw: er,
         }
         break
