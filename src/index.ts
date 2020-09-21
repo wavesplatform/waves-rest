@@ -272,6 +272,9 @@ export const wavesApi = (config: IApiConfig, h: IHttp): IWavesApi => {
     return ([] as Tx[]).concat.apply([], txs)
   }
 
+  const getTransactionsByAddress = async (address: string, limit: number = 100): Promise<Tx[]> =>
+    node.get<Tx[]>(`transactions/address/${address}/limit/${limit}`)
+
   const getTxById = async (txId: string): Promise<Tx> =>
     node.get<Tx>(`transactions/info/${txId}`)
 
@@ -466,6 +469,9 @@ export const wavesApi = (config: IApiConfig, h: IHttp): IWavesApi => {
     //blocks
     getBlocksTransactions,
 
+    //transactions
+    getTransactionsByAddress,
+
     //txs
     getTxById,
     waitForTx,
@@ -536,6 +542,8 @@ export interface IWavesApi {
   //blocks
   getBlocksTransactions(from: number, to: number): Promise<Tx[]>
 
+  //transactions
+  getTransactionsByAddress(address: string, limit?: number): Promise<Tx[]>
   //txs
   getTxById(txId: string): Promise<Tx>
   waitForTx(txId: string, timeoutInSeconds?: number): Promise<Tx>
