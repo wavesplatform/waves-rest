@@ -273,7 +273,7 @@ export const wavesApi = (config: IApiConfig, h: IHttp): IWavesApi => {
   }
 
   const getTransactionsByAddress = async (address: string, limit: number = 100): Promise<Tx[]> =>
-    node.get<Tx[]>(`transactions/address/${address}/limit/${limit}`)
+    node.get<Tx[][]>(`transactions/address/${address}/limit/${limit}`).then(x => x[0])
 
   const getTxById = async (txId: string): Promise<Tx> =>
     node.get<Tx>(`transactions/info/${txId}`)

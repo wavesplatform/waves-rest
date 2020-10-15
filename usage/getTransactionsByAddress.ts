@@ -8,7 +8,7 @@ const { getTransactionsByAddress } = wavesApi(config.mainnet, axiosHttp(axios))
 
 const main = async () => {
   try {
-    const r = await getTransactionsByAddress('3PNikM6yp4NqcSU8guxQtmR5onr2D4e8yTJ', 1)
+    const r = await getTransactionsByAddress('3P9ZegsKUtsEpdRPNVrMH7nHEEqY5MrmjDp', 30)
     console.log(r)
   } catch (error) {
     console.log(error)
