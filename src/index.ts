@@ -158,7 +158,14 @@ export const retry = async <T>(action: () => Promise<T>, limit: number, delayAft
   return await retry(action, limit - 1, delayAfterFail)
 }
 
-export type ApiIterable<T> = AsyncIterable<{ lastCursor: string, items: T[] }> & { first: () => Promise<{ lastCursor: string, items: T[] }>; take: (count: number) => AsyncIterableIterator<{ lastCursor: string, items: T[] }>, all: () => Promise<T[]> }
+export type ApiIterable<T> = AsyncIterable<{ lastCursor: string, items: T[] }>
+  & {
+    first: () => Promise<{ lastCursor: string, items: T[] }>
+    take: (count: number) => ApiIterable<T>
+    takeWhile: (predicate: (chunk: { lastCursor: string, items: T[] }) => boolean) => ApiIterable<T>
+    takeWithFilter: (predicate: (item: T) => boolean) => ApiIterable<T>
+    all: () => Promise<T[]>
+  }
 
 export const wavesApi = (config: IApiConfig, h: IHttp): IWavesApi => {
   const http = {
@@ -202,37 +209,69 @@ export const wavesApi = (config: IApiConfig, h: IHttp): IWavesApi => {
   //     .filter(x => x !== undefined)
   //     .join('&')
 
-  const asyncIterator = <T extends { lastCursor: string }>(fetch: (lastCursor?: string) => Promise<T>) => <R>(
+  const asyncIterator = <T>(fetch: (lastCursor?: string) => Promise<T>) => <R>(
     map: (value: T) => { lastCursor: string, items: R[] }
-  ) => (options?: { initialCursor?: string; pageLimit?: number }): ApiIterable<R> => {
+  ) => (options?: PagingOptions): ApiIterable<R> => {
     let cursor = options && options.initialCursor
     let pageCount = 0
+
+    type TIterator = { lastCursor: string, items: R[] }
 
     async function* createIterator() {
       do {
         const data = await fetch(cursor)
-
-        yield map(data)
-        cursor = data.lastCursor
+        const result = map(data)
+        yield result
+        cursor = result.lastCursor
         pageCount++
       } while (cursor && pageCount < ((options && options!.pageLimit) || Number.MAX_SAFE_INTEGER))
+
+      return {} as ReturnType<typeof map>
     }
 
     const iterator = createIterator()
 
-    async function* take<T>(iterator: AsyncIterableIterator<T>, count: number) {
+    async function* take<T>(iterator: AsyncGenerator<TIterator, TIterator>, count: number) {
       let take = 0
+      let done = false
       do {
         const data = await iterator.next()
+        done = data.done ?? false
         yield data.value
         take++
-      } while (take < count)
+      } while (take < count && !done)
     }
 
-    const ext = (iterator: AsyncIterableIterator<{ lastCursor: string, items: R[] }>) => ({
+    async function* takeWhile(iterator: AsyncGenerator<TIterator, TIterator>, predicate: (chunk: TIterator) => boolean) {
+      let done = false
+      let predicateResult = true
+      do {
+        const data = await iterator.next()
+        done = data.done ?? false
+        predicateResult = predicate(data.value)
+        yield data.value
+      } while (!done && predicateResult)
+    }
+
+    async function* takeWithFilter(iterator: AsyncGenerator<TIterator, TIterator>, predicate: (item: R) => boolean) {
+      let done = false
+      let predicateResult = true
+      do {
+        const data = await iterator.next()
+        done = data.done ?? false
+        const items = data.value.items.filter(predicate)
+        predicateResult = items.length === data.value.items.length
+        yield { lastCursor: data.value.lastCursor, items }
+      } while (!done && predicateResult)
+    }
+
+
+    const ext = (iterator: AsyncGenerator<TIterator>) => ({
       ...iterator,
       first: () => iterator.next().then(x => x.value),
       take: (count: number) => ext(take(iterator, count)),
+      takeWhile: (predicate: (chunk: TIterator) => boolean) => ext(takeWhile(iterator, predicate)),
+      takeWithFilter: (predicate: (item: R) => boolean) => ext(takeWithFilter(iterator, predicate)),
       all: async () => {
         const all: R[][] = []
         for await (const i of iterator) {
@@ -247,10 +286,19 @@ export const wavesApi = (config: IApiConfig, h: IHttp): IWavesApi => {
 
   type ApiListReponse<T> = { lastCursor: string; data: { data: T }[] }
 
+  const buildQueryString = (params: any) => {
+    const queryString = Object.entries(params)
+      .map(([key, value]) => value ? `${key}=${value}` : '')
+      .join('')
+
+    return queryString ? '?' + queryString : ''
+  }
+
   const buildEndpoint = <TParams extends BaseParams, T>(url: string) => (params: TParams, options?: PagingOptions) =>
     asyncIterator<ApiListReponse<T>>((lastCursor?: string) =>
       api.post<ApiListReponse<T>>(url, { ...params, after: lastCursor })
     )(x => ({ lastCursor: x.lastCursor, items: x.data.map(y => y.data) }))(options)
+
 
   const getDataTxs = buildEndpoint<GetDataTxsParams, DataTransaction>('transactions/data?')
   const getMassTransfersTxs = buildEndpoint<GetMassTransferTxsParams, MassTransferTransaction>(
@@ -272,8 +320,13 @@ export const wavesApi = (config: IApiConfig, h: IHttp): IWavesApi => {
     return ([] as Tx[]).concat.apply([], txs)
   }
 
-  const getTransactionsByAddress = async (address: string, limit: number = 100): Promise<Tx[]> =>
-    node.get<Tx[][]>(`transactions/address/${address}/limit/${limit}`).then(x => x[0])
+  const getTransactionsByAddress = async (address: string, limit: number = 100, after: string = ''): Promise<Tx[]> =>
+    node.get<Tx[][]>(`transactions/address/${address}/limit/${limit}${buildQueryString({ after })}`).then(x => x[0])
+
+  const iterateTransactionsByAddress = (address: string, options?: PagingOptions): ApiIterable<Tx> =>
+    asyncIterator<Tx[]>((lastCursor?: string) =>
+      getTransactionsByAddress(address, options?.pageSize, lastCursor)
+    )(x => ({ lastCursor: x[x.length - 1]?.id, items: x }))(options)
 
   const getTxById = async (txId: string): Promise<Tx> =>
     node.get<Tx>(`transactions/info/${txId}`)
@@ -471,6 +524,7 @@ export const wavesApi = (config: IApiConfig, h: IHttp): IWavesApi => {
 
     //transactions
     getTransactionsByAddress,
+    iterateTransactionsByAddress,
 
     //txs
     getTxById,
@@ -544,6 +598,7 @@ export interface IWavesApi {
 
   //transactions
   getTransactionsByAddress(address: string, limit?: number): Promise<Tx[]>
+  iterateTransactionsByAddress(address: string, filters: PagingOptions): ApiIterable<Tx>
   //txs
   getTxById(txId: string): Promise<Tx>
   waitForTx(txId: string, timeoutInSeconds?: number): Promise<Tx>

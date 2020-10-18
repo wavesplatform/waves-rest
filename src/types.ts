@@ -362,6 +362,7 @@ export interface Payment {
 export interface PagingOptions {
   initialCursor?: string
   pageLimit?: number
+  pageSize?: number
 }
 
 export interface KeyValuePair {
