@@ -1,6 +1,6 @@
 {
   "name": "@waves/waves-rest",
-  "version": "0.0.74",
+  "version": "0.0.75",
   "description": "Waves rest apis bundled together",
   "keywords": [
     "waves",
