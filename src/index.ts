@@ -87,10 +87,8 @@ export type EnchancedIterator<T> = AsyncIterable<T> & {
 
 const isWavesAsset = (assetId: string) => !assetId || assetId === WAVES_ASSET_ID
 
-
-
 const wrapError = (error: any) => {
-  let er
+  let er = error
   if (error && error.response && error.response.data) {
     switch (error.response.data.error) {
       case 112:
