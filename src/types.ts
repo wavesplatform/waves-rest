@@ -239,7 +239,7 @@ export interface WaitForOrderToFillParams {
   timeoutInSeconds?: number
 }
 
-export interface GetOrdetStatusParams {
+export interface GetOrderStatusParams {
   orderId: string
   amountAsset?: string | null | undefined
   priceAsset?: string | null | undefined
@@ -383,6 +383,23 @@ export interface IScriptDecompileResult {
   CONTENT_TYPE: string
   script: string
 }
+
+export interface ICompileCodeResult {
+  script: string
+  complexity: number
+  verifierComplexity: number
+  callableComplexities: {
+    stake: number
+    borrow: number
+    initialize: number
+    repay: number
+    withdraw: number
+    unstake: number
+    deposit: number
+  }
+  extraFee: number
+}
+
 
 export interface GetMarketsResponse {
   matcherPublicKey: string

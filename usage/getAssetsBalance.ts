@@ -12,6 +12,7 @@ const main = async () => {
     const balance = await getAssetsBalance(address)
     //const b = balance.balances.filter(x => x.assetId === 'HkaoAeH39rqZG7sY9rdhn53KfK2WWd2q3yeDRLgyqfoP')
     
+    
     console.log(balance.balances.map(x => ({ assetId: x.assetId, balance: x.balance })))
   } catch (error) {
     console.log(error)

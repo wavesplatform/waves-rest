@@ -37,9 +37,10 @@ import {
   InferTxType,
   TTransactionTypes,
   TransactionTypes,
-  GetOrdetStatusParams as GetOrderStatusParams,
+  GetOrderStatusParams,
   OrderbookPairRestrictions,
   WaitForOrderToFillParams,
+  ICompileCodeResult,
 } from './types'
 
 export {
@@ -479,11 +480,15 @@ export const wavesApi = (config: IApiConfig, h: IHttp): IWavesApi => {
   const cancelOrder = async (amountAsset: string, priceAsset: string, cancelOrder: ICancelOrder) =>
     matcher.post<void>(`orderbook/${amountAsset}/${priceAsset}/cancel`, cancelOrder)
 
-  const getKeyValuePairs = (address: string): Promise<KeyValuePair[]> =>
+  const getKeyValuePairs = (address: string, ...keys: string[]): Promise<KeyValuePair[]> =>
     node.get<KeyValuePair[]>(`addresses/data/${address}`).then(x => x.map(({ type, value, key }) => ({ type, key, value: value.toString() })))
 
   const getValueByKey = (address: string, key: string): Promise<KeyValuePair> =>
     node.get<KeyValuePair>(`addresses/data/${address}/${key}`)
+
+  const getValuesByKeys = (address: string, ...keys: string[]): Promise<string[]> =>
+    node.get<KeyValuePair[]>(`addresses/data/${address}?${keys.map(x => `key=${x}`).join('&')}`)
+      .then(x => x.map(({ type, value, key }) => value.toString()))
 
   const getWavesExchangeRate = (to: 'btc' | 'usd'): Promise<number> => {
     const map = {
@@ -504,6 +509,9 @@ export const wavesApi = (config: IApiConfig, h: IHttp): IWavesApi => {
 
   const getScriptInfo = (address: string): Promise<IScriptInfo> =>
     node.get<IScriptInfo>(`addresses/scriptInfo/${address}`)
+
+  const compileCode = (code: string): Promise<ICompileCodeResult> =>
+    node.post<ICompileCodeResult>('utils/script/compileCode', code)
 
   const decompileScript = (scriptBinary: string) =>
     node.post<IScriptDecompileResult>('utils/script/decompile', scriptBinary)
@@ -542,6 +550,7 @@ export const wavesApi = (config: IApiConfig, h: IHttp): IWavesApi => {
     //data
     getKeyValuePairs,
     getValueByKey,
+    getValuesByKeys,
 
     //balance
     getBalance,
@@ -560,6 +569,7 @@ export const wavesApi = (config: IApiConfig, h: IHttp): IWavesApi => {
     getScriptInfo,
     decompileScript,
     stateChanges,
+    compileCode,
 
 
     //matcher
@@ -613,8 +623,9 @@ export interface IWavesApi {
   getSetScriptTxs(params: GetSetScriptTxsParams, options?: PagingOptions): ApiIterable<SetScriptTransaction>
 
   //data
-  getKeyValuePairs(address: string): Promise<KeyValuePair[]>
+  getKeyValuePairs(address: string, ...keys: string[]): Promise<KeyValuePair[]>
   getValueByKey(address: string, key: string): Promise<KeyValuePair>
+  getValuesByKeys(address: string, ...keys: string[]): Promise<string[]>
 
   //balance
   getBalance(address: string): Promise<number>
@@ -633,6 +644,7 @@ export interface IWavesApi {
   getScriptInfo(address: string): Promise<IScriptInfo>
   decompileScript(scriptBinary: string): Promise<IScriptDecompileResult>
   stateChanges(txId: string): Promise<StateChanges>
+  compileCode(code: string): Promise<ICompileCodeResult>
 
 
 

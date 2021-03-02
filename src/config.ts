@@ -7,7 +7,7 @@ export interface IApiConfig {
   chainId: string
 }
 
-export const config: { [K in 'testnet' | 'mainnet' | 'stage']: IApiConfig } = {
+export const config: { [K in 'testnet' | 'mainnet' | 'stage' | 'local']: IApiConfig } = {
   testnet: {
     nodes: 'https://nodes-testnet.wavesnodes.com/',
     api: 'https://api.testnet.wavesplatform.com/v0/',
@@ -31,5 +31,13 @@ export const config: { [K in 'testnet' | 'mainnet' | 'stage']: IApiConfig } = {
     matcher: 'https://matcher.wavesnodes.org/matcher/',
     matcherPublicKey: '7kPFrHDiGw1rCm7LPszuECwWYL3dMf6iMifLRDJQZMzy',
     chainId: 'W',
+  },
+
+  local: {
+    nodes: 'http://localhost:6869/',
+    api: '',
+    matcher: '',
+    matcherPublicKey: '',
+    chainId: 'R',
   },
 }

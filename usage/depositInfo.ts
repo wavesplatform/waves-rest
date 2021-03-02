@@ -2,8 +2,7 @@ import { wavesApi, wellKnownTokens } from '../src'
 import { config } from '../src/config'
 import { axiosHttp } from '../src/http-bindings'
 import axios from 'axios'
-import { address } from '@waves/waves-crypto'
-import { randomSeed } from '@waves/ts-lib-crypto'
+import { randomSeed, address } from '@waves/ts-lib-crypto'
 
 const { getDepositInfo } = wavesApi(config.mainnet, axiosHttp(axios))
 
