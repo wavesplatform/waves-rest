@@ -41,6 +41,7 @@ import {
   OrderbookPairRestrictions,
   WaitForOrderToFillParams,
   ICompileCodeResult,
+  IEvaluateResult,
 } from './types'
 
 export {
@@ -481,7 +482,8 @@ export const wavesApi = (config: IApiConfig, h: IHttp): IWavesApi => {
     matcher.post<void>(`orderbook/${amountAsset}/${priceAsset}/cancel`, cancelOrder)
 
   const getKeyValuePairs = (address: string, ...keys: string[]): Promise<KeyValuePair[]> =>
-    node.get<KeyValuePair[]>(`addresses/data/${address}`).then(x => x.map(({ type, value, key }) => ({ type, key, value: value.toString() })))
+    node.get<KeyValuePair[]>(`addresses/data/${address}?${keys.map(x => `key=${x}`).join('&')}`)
+      .then(x => x.map(({ type, value, key }) => ({ type, key, value: value.toString() })))
 
   const getValueByKey = (address: string, key: string): Promise<KeyValuePair> =>
     node.get<KeyValuePair>(`addresses/data/${address}/${key}`)
@@ -509,6 +511,9 @@ export const wavesApi = (config: IApiConfig, h: IHttp): IWavesApi => {
 
   const getScriptInfo = (address: string): Promise<IScriptInfo> =>
     node.get<IScriptInfo>(`addresses/scriptInfo/${address}`)
+
+  const evaluate = async (contractAddress: string, expression: string): Promise<IEvaluateResult> =>
+    node.post<IEvaluateResult>(`utils/script/evaluate/${contractAddress}`, { expr: expression })
 
   const compileCode = (code: string): Promise<ICompileCodeResult> =>
     node.post<ICompileCodeResult>('utils/script/compileCode', code)
@@ -569,6 +574,7 @@ export const wavesApi = (config: IApiConfig, h: IHttp): IWavesApi => {
     getScriptInfo,
     decompileScript,
     stateChanges,
+    evaluate,
     compileCode,
 
 
@@ -644,9 +650,8 @@ export interface IWavesApi {
   getScriptInfo(address: string): Promise<IScriptInfo>
   decompileScript(scriptBinary: string): Promise<IScriptDecompileResult>
   stateChanges(txId: string): Promise<StateChanges>
+  evaluate(contractAddress: string, expression: string): Promise<IEvaluateResult>
   compileCode(code: string): Promise<ICompileCodeResult>
-
-
 
   //matcher
   placeOrder(order: IOrder): Promise<{ success: boolean, message: Order & { id: string }, status: string }>

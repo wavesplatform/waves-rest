@@ -3,10 +3,10 @@ import axios from 'axios'
 import { config } from '../src/config'
 import { axiosHttp } from '../src/http-bindings'
 
-const { stateChanges } = wavesApi(config.testnet, axiosHttp(axios))
+const { stateChanges } = wavesApi(config.local, axiosHttp(axios))
 
 const main = async () => {
-  const r = await stateChanges('E4W4dkMCubrDsJAJfZbQQE3DxvLtN9uAbQGk7wBGJ15J')
+  const r = await stateChanges('6QL24kZ8MVs7CMZe2jdcmMogPk6qKEVxgWf8SpfHKg1x')
   console.log(r)
 }
 
